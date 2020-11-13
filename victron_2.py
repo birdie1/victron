@@ -3,7 +3,10 @@ import gatt
 from gatt.gatt_linux import Characteristic
 import threading
 import os
+import sys
 import time
+
+import ipdb
 
 logger_name = "x"
 
@@ -145,6 +148,64 @@ def subscribe_notifications():
     print("enable notifications done")
 
 
+TYPE_NAMES = {
+    0x1: "unknown",
+    0x2: "unknown",
+    0x4: "single value reply",
+    0x8: "unknown",
+}
+
+DATA_NAMES = {
+    0x8D: "Voltage",
+    0x8E: "Power",
+    0x7D: "Starter",
+    0x8C: "Current",
+}
+
+
+def twos_comp(val, bits):
+    """compute the 2's complement of int value val"""
+    if (val & (1 << (bits - 1))) != 0:  # if sign bit is set e.g., 8bit: 128-255
+        val = val - (1 << bits)  # compute negative value
+    return val  # return positive value as is
+
+
+def format_data(type_id, value):
+    converted = int.from_bytes(value, "little", signed=True)
+    if type_id == 0x8D:
+        return str(converted / 100) + "V"
+    if type_id == 0x8E:
+        return str(converted) + "W"
+    if type_id == 0x7D:
+        return str(converted / 100) + "V"
+    if type_id == 0x8C:
+        return str(converted / 1000) + "A"
+
+
+def decode_value(value):
+    DATATYPE_POS = 4
+    LENGHT_TYPE_POS = 5
+    DATA_POS = 6
+
+    length_type_field = value[LENGHT_TYPE_POS]
+    length = length_type_field & 0x0F
+    type_id = (length_type_field & 0xF0) >> 4
+    data = value[DATA_POS : DATA_POS + length]
+
+    data_type = value[DATATYPE_POS]
+    data_label = DATA_NAMES[data_type]
+    data_string = format_data(data_type, data)
+    return f"{data_label}: {data_string}"
+
+
+def handle_known_values(value):
+    VALUE_PREFIX = bytes.fromhex("080319ed")
+    result = ""
+    if VALUE_PREFIX in value:
+        result = decode_value(value)
+    print(result, file=sys.stderr)
+
+
 class AnyDevice(gatt.Device):
     def connect_succeeded(self):
         super().connect_succeeded()
@@ -194,6 +255,8 @@ class AnyDevice(gatt.Device):
     def characteristic_value_updated(self, characteristic, value):
         if characteristic.uuid == "0000180a-0000-1000-8000-00805f9b34fb":
             print("Firmware version:", value.decode("utf-8"))
+        if characteristic.uuid == "306b0004-b081-4037-83dc-e59fcc3cdfd0":
+            handle_known_values(value)
         else:
             print(
                 f"unhandled characteristic updated: [{characteristic.uuid}]\tvalue:{value}"
@@ -219,35 +282,34 @@ class AnyDevice(gatt.Device):
         firmware_version_characteristic.read_value()
 
 
-# victron on its protocol
-# https://community.victronenergy.com/questions/40048/victron-data-capture-via-bluetooth.html
-manager = gatt.DeviceManager(adapter_name="hci0")
+if __name__ == "__main__":
 
-print("start")
+    # victron on its protocol
+    # https://community.victronenergy.com/questions/40048/victron-data-capture-via-bluetooth.html
+    manager = gatt.DeviceManager(adapter_name="hci0")
 
+    print("start")
 
-print("manager thread")
-t1 = threading.Thread(target=lambda: manager.run())
-t1.daemon = True
-t1.start()
-print("manager running")
+    print("manager thread")
+    t1 = threading.Thread(target=lambda: manager.run())
+    t1.daemon = True
+    t1.start()
+    print("manager running")
 
+    print("connect & sleep")
+    device = AnyDevice(mac_address="fd:d4:50:0f:6c:1b", manager=manager)
+    device.connect()
+    print("sleep after connect")
+    time.sleep(5)
+    print("connect done")
 
-print("connect & sleep")
-device = AnyDevice(mac_address="fd:d4:50:0f:6c:1b", manager=manager)
-device.connect()
-print("sleep after connect")
-time.sleep(5)
-print("connect done")
+    subscribe_notifications()
 
+    print("send init seuqucene")
+    send_init_sequence()
 
-subscribe_notifications()
-
-print("send init seuqucene")
-send_init_sequence()
-
-# print("manager run")
-# manager.run()
-while True:
-    time.sleep(20)
-    send_ping()
+    # print("manager run")
+    # manager.run()
+    while True:
+        time.sleep(20)
+        send_ping()
