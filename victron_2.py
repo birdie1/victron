@@ -83,6 +83,7 @@ def init_sequence_template():
 
 
 ping = [
+    ("0024", "0300"),
     ("0021", "f941"),  # taken from phoenix, sends power & current
 ]
 
