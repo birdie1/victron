@@ -33,10 +33,11 @@ logger_name = "x"
 def init_sequence_template():
     stuff = [
         ("0021", "fa80ff"),
-        ("0021", "f980"),  # chase security violation
+        ("0021", "f980"),
         ("0024", "01"),
-        ("0024", "0300"),
-        # ("0024", "060082189342102703010303"),
+        ("0024", "0300"),  # triggers undecoded responses 0x080318 0x080319 && 0xffff
+        ("0024", "060082189342102703010303"),  # send voltage, power, current
+        ("0021", "f941"),  # taken from phoenix, sends power & current
         # ("0027", "05008119010905008119010a05008119ec0f0500"),
         # ("0027", "8119ec0e05008119010c050081189005008119ec"),
         # ("0024", "3f05008119ec12"),
@@ -81,6 +82,10 @@ def init_sequence_template():
         yield (c, b)
 
 
+ping = [
+    ("0021", "f941"),  # taken from phoenix, sends power & current
+]
+
 smart_shunt_ids = {
     # service 0x 52
     "0027": "306b0004-b081-4037-83dc-e59fcc3cdfd0",  # 1
@@ -106,6 +111,17 @@ def send_init_sequence():
     (c, b) = next(init_sequence)
     print(f"sending {c.uuid}, data{b}")
     c.write_value(b)
+
+
+def send_ping():
+    print("send ping")
+    for packet in ping:
+        c = characteristics[smart_shunt_ids[packet[0]]]
+        hs = packet[1]
+        b = bytearray.fromhex(hs)
+        print(f"sending {c.uuid}, data{b}")
+        c.write_value(b)
+    print("send ping done")
 
 
 services = {
@@ -232,4 +248,5 @@ send_init_sequence()
 # print("manager run")
 # manager.run()
 while True:
-    pass
+    time.sleep(20)
+    send_ping()
