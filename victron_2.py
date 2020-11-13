@@ -198,12 +198,25 @@ def decode_value(value):
     return f"{data_label}: {data_string}"
 
 
+import subprocess
+
+
+def syslog(text):
+    subprocess.run(
+        ["/usr/bin/logger", f"--id={os.getpid()}", "-t", "Smard Schund", text]
+    )
+
+
 def handle_known_values(value):
     VALUE_PREFIX = bytes.fromhex("080319ed")
     result = ""
-    if VALUE_PREFIX in value:
+    if value.startswith(VALUE_PREFIX):
         result = decode_value(value)
-    print(result, file=sys.stderr)
+        print(result, file=sys.stderr)
+        syslog(result)
+    else:
+        pass
+        # print("wrong prefix")
 
 
 class AnyDevice(gatt.Device):
