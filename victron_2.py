@@ -156,10 +156,11 @@ TYPE_NAMES = {
 }
 
 DATA_NAMES = {
-    0x8D: "Voltage",
-    0x8E: "Power",
     0x7D: "Starter",
     0x8C: "Current",
+    0x8D: "Voltage",
+    0x8E: "Power",
+    0x8F: "Capacity",
 }
 
 
@@ -171,18 +172,38 @@ def twos_comp(val, bits):
 
 
 def format_data(type_id, value):
-    converted = int.from_bytes(value, "little", signed=True)
-    if type_id == 0x8D:
-        return str(converted / 100) + "V"
-    if type_id == 0x8E:
-        return str(converted) + "W"
     if type_id == 0x7D:
+        converted = int.from_bytes(value, "little", signed=True)
         return str(converted / 100) + "V"
     if type_id == 0x8C:
+        converted = int.from_bytes(value, "little", signed=True)
         return str(converted / 1000) + "A"
+    if type_id == 0x8D:
+        converted = int.from_bytes(value, "little", signed=False)
+        return str(converted / 100) + "V"
+    if type_id == 0x8E:
+        converted = int.from_bytes(value, "little", signed=True)
+        return str(converted) + "W"
+    if type_id == 0x8F:
+        converted = int.from_bytes(value, "little", signed=False)
+        percent = converted / 0xFFFF * 100
+        return str(percent) + "%"
+    # else unknown
+    converted = int.from_bytes(value, "little", signed=False)
+    return converted
+
+
+def get_data_name(data_type):
+    try:
+        return DATA_NAMES[data_type]
+    except:
+        return f"unknown value (0x{data_type:0X})"
 
 
 def decode_value(value):
+    """function expects whole packet with 4-byte prefix
+    but counts consumed bytes without prefix!!
+    """
     DATATYPE_POS = 4
     LENGHT_TYPE_POS = 5
     DATA_POS = 6
@@ -193,9 +214,10 @@ def decode_value(value):
     data = value[DATA_POS : DATA_POS + length]
 
     data_type = value[DATATYPE_POS]
-    data_label = DATA_NAMES[data_type]
+    data_label = get_data_name(data_type)
     data_string = format_data(data_type, data)
-    return f"{data_label}: {data_string}"
+    consumed = 2 + length
+    return f"{data_label}: {data_string}", consumed
 
 
 import subprocess
@@ -207,16 +229,52 @@ def syslog(text):
     )
 
 
+buffer = bytearray()
+
+
+def signature_complete(value, signature):
+    try:
+        for pos, sig in signature:
+            if not value[pos] == sig:
+                return False
+        return True
+    except:
+        return False
+
+
+def start_of_packet(value):
+    signature = [
+        (0, 0x08),
+        (2, 0x19),
+    ]
+    for offset, item in enumerate(value):
+        if item == signature[0][1]:
+            result = signature_complete(value[offset:], signature)
+            if result == True:
+                return offset
+    return -1
+
+
+def handle_bulk_values(value):
+    global buffer
+    buffer.extend(value)
+
+    pos = start_of_packet(buffer)
+    while len(buffer) > 0 and pos >= 0:
+        consumed = handle_known_values(buffer[pos:])
+        buffer = buffer[pos + consumed :]
+        pos = start_of_packet(buffer)
+
+
 def handle_known_values(value):
     VALUE_PREFIX = bytes.fromhex("080319ed")
     result = ""
-    if value.startswith(VALUE_PREFIX):
-        result = decode_value(value)
-        print(result, file=sys.stderr)
-        syslog(result)
-    else:
-        pass
-        # print("wrong prefix")
+    consumed = len(VALUE_PREFIX)
+
+    result, used = decode_value(value)
+    consumed += used
+    print(result, file=sys.stderr)
+    return consumed
 
 
 class AnyDevice(gatt.Device):
@@ -268,7 +326,9 @@ class AnyDevice(gatt.Device):
     def characteristic_value_updated(self, characteristic, value):
         if characteristic.uuid == "0000180a-0000-1000-8000-00805f9b34fb":
             print("Firmware version:", value.decode("utf-8"))
-        if characteristic.uuid == "306b0004-b081-4037-83dc-e59fcc3cdfd0":
+        if characteristic.uuid == smart_shunt_ids["0027"]:
+            handle_bulk_values(value)
+        if characteristic.uuid in smart_shunt_ids.values():
             handle_known_values(value)
         else:
             print(
