@@ -140,6 +140,9 @@ def subscribe_notifications():
 
 
 class AnyDevice(gatt.Device):
+    def __init__(self, mac_address, manager,notification_table):
+      super().__init__(mac_address,manager,managed=True)
+
     def connect_succeeded(self):
         super().connect_succeeded()
         print("[%s] Connected" % (self.mac_address))
@@ -167,7 +170,6 @@ class AnyDevice(gatt.Device):
                     % (self.mac_address, characteristic.uuid)
                 )
                 characteristics[characteristic.uuid] = characteristic
-        self.request_firmware_Version()
 
     def characteristic_enable_notification_succeeded(self, characteristic, value):
         print("enable notification succeded")
@@ -192,7 +194,8 @@ class AnyDevice(gatt.Device):
             if characteristic.uuid == smart_shunt_ids["0027"]:
                 handle_bulk_values(value)
             if characteristic.uuid in smart_shunt_ids.values():
-                handle_single_value(value)
+                handler_fun = smart_shunt_ids[characteristic.uuid]
+                handler_fun(value)
             else:
                 print(
                     f"unhandled characteristic updated: [{characteristic.uuid}]\tvalue:{value}"
@@ -219,8 +222,8 @@ class AnyDevice(gatt.Device):
 
         firmware_version_characteristic.read_value()
 
-def get_device_instance(mac):
-  return AnyDevice(mac, manager=manager)
+def get_device_instance(mac, notification_table):
+  return AnyDevice(mac, manager=manager, notification_table=notification_table)
 
 # init event loop
 manager = gatt.DeviceManager(adapter_name="hci0")

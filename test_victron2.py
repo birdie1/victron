@@ -1,7 +1,9 @@
-from victron_gatt import AnyDevice,smart_shunt_ids
+from victron_gatt import AnyDevice, get_device_instance, smart_shunt_ids
 from _pytest import fixtures
 import pytest
 from victron_2 import (
+    UUID_HANDLER_TABLE,
+    VARLEN_CATEGORY_LOOKUP,
     handle_one_value,
     decode_var_len,
     start_of_packet,
@@ -25,7 +27,9 @@ def test_handle_knwon():
     PREFIX_LENGTH = 4
     for data, expected, length in FIXTURES:
         input = bytes.fromhex(data)
-        result, consumed = decode_var_len(input)
+        header = decode_header(input)
+        category = VARLEN_CATEGORY_LOOKUP[header.category_type]
+        result, consumed = decode_var_len(input[4:], category[1], category[2])
 
         assert result == expected
         assert consumed + PREFIX_LENGTH == length
@@ -35,7 +39,7 @@ def test_updated():
     fixtures = [
         ("0027", "080319ed8f42f8ff080319ed8c444efcffff0803"),
     ]
-    device = AnyDevice("", manager)
+    device = get_device_instance("", UUID_HANDLER_TABLE)
     for handle, data in fixtures:
         dummy_characteristic = types.SimpleNamespace(uuid=smart_shunt_ids[handle])
         device.characteristic_value_updated(dummy_characteristic, bytes.fromhex(data))
@@ -60,10 +64,11 @@ def test_real_errors():
             b"\xc5\x82\x99V\xa0\x00T\x01\x00\x00\xd1\xff\xff\xff\xff\x08\x03\x19\x03\x08",
         ),
     ]
-    device = AnyDevice("", manager)
+    device = get_device_instance("", UUID_HANDLER_TABLE)
     for handle, data in fixtures:
         dummy_characteristic = types.SimpleNamespace(uuid=smart_shunt_ids[handle])
         device.characteristic_value_updated(dummy_characteristic, data)
+
 
 def test_decode_header():
     fixtures = [
@@ -71,18 +76,19 @@ def test_decode_header():
         (bytes.fromhex("09031903"), VALUE_TYPES.FIXED_LEN, CATEGORY_TYPES.HISTORY),
         (bytes.fromhex("090319ed"), VALUE_TYPES.FIXED_LEN, CATEGORY_TYPES.VALUES),
         (bytes.fromhex("0803190f"), VALUE_TYPES.VAR_LEN, CATEGORY_TYPES.SETTINGS2),
-
     ]
     for param in fixtures:
         result = decode_header(param[0])
         assert result.value_type == param[1]
         assert result.category_type == param[2]
 
+
 def test_battery_capacity():
     fixtures = [
-        ("0027",bytes.fromhex("0803190fff421027")),
+        ("0027", bytes.fromhex("0803190fff421027")),
     ]
-    device = AnyDevice("", manager)
+
+    device = get_device_instance("", UUID_HANDLER_TABLE)
     for handle, data in fixtures:
         dummy_characteristic = types.SimpleNamespace(uuid=smart_shunt_ids[handle])
         device.characteristic_value_updated(dummy_characteristic, data)

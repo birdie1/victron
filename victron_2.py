@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from victron_gatt import get_device_instance
+from victron_gatt import get_device_instance, smart_shunt_ids
 import gatt
 from gatt.gatt_linux import Characteristic
 import threading
@@ -8,6 +8,7 @@ import sys
 import time
 
 import ipdb
+
 ############################ wireshark
 # 1.)mkfifo /tmp/hci_dump.pcap
 # 2.) nc -k -l  9000 >> dump_new_init.pcap
@@ -18,20 +19,24 @@ import ipdb
 # binascii.hexlify(struct.pack('<h',10*60))
 # struct.unpack('>f',b'\x03\x84')
 
-#original start of values sequence
+# original start of values sequence
 VALUE_PREFIX = bytes.fromhex("08031903")
 
 
-from enum import Enum
+from enum import IntEnum
 
-class VALUE_TYPES (Enum):
+
+class VALUE_TYPES(IntEnum):
     FIXED_LEN = 0x09
     VAR_LEN = 0x08
-class CATEGORY_TYPES(Enum):
+
+
+class CATEGORY_TYPES(IntEnum):
     HISTORY = 0x03
     SETTINGS = 0x10
-    VALUES = 0xed
-    SETTINGS2 = 0x0f
+    VALUES = 0xED
+    SETTINGS2 = 0x0F
+
 
 TYPE_NAMES = {
     0x1: "unknown",
@@ -49,8 +54,37 @@ DATA_NAMES = {
     0xFE: "Capa (alt)??",
 }
 
+CATEGORY_NAMES = {
+    0x03190308: "history values",
+    0x03190309: "history bools",
+    0x10190308: "settings values",
+    0x10190309: "settings bools",
+    0xED190308: "values values",
+    0xED190309: "values bools",
+    0x0F190308: "mixed settings",
+}
+
+
 MIXED_SETTINGS_NAMES = {
     0xFF: "Battery Charge Status",
+}
+
+
+HISTORY_VALUE_NAMES = {
+    0x09: "hist synchronizations",
+    0x03: "hist total caharge cycles",
+    0x04: "hist full discharges",
+}
+HISTORY_VALUE_FUNS = {}
+
+FIXEDLEN_CATEGORY_LOOKUP = {
+    0x03190308: ("history values", HISTORY_VALUE_NAMES, None),
+    0x03190309: "history bools",
+    0x10190308: "settings values",
+    0x10190309: "settings bools",
+    0xED190308: "values values",
+    0xED190309: "values bools",
+    0x0F190308: "mixed settings",
 }
 
 
@@ -93,6 +127,7 @@ def format_mixed_settings(type_id, value):
         converted = int.from_bytes(value, "little", signed=False)
         return str(converted / 100) + "%"
 
+
 def get_label(data_type, data_name):
     try:
         return data_name[data_type]
@@ -100,9 +135,58 @@ def get_label(data_type, data_name):
         return f"unknown type (0x{data_type:0X})"
 
 
-def decode_var_len(value, data_names, format_fun):
-    """function expects whole packet with 4-byte prefix
-    but counts consumed bytes without prefix!!
+MIXED_SETTINGS_FUNS = {
+    0xFF: format_mixed_settings,
+}
+
+VALUE_FUNS = {
+    0x8C: format_value_data,
+    0x8D: format_value_data,
+    0x8E: format_value_data,
+    0x7D: format_value_data,
+}
+
+VALUE_NAMES = {
+    0x8C: "Current",
+    0x8D: "Voltage",
+    0x8E: "Power",
+    0x7D: "Starter",
+}
+
+SETTINGS_NAMES = {
+    0x00: "set capacity",
+    0x01: "set charged voltage",
+    0x02: "set tail current",
+    0x03: "set charged detection time",
+    0x04: "set charge eff. factor",
+    0x05: "set peukert coefficient",
+    0x06: "set current threshold",
+    0x07: "set time-to-go avg. per.",
+    0x08: "set discharge floor",
+}
+
+SETTINGS_FUNS = {
+    0x00: format_value_data,
+    0x01: format_value_data,
+    0x02: format_value_data,
+    0x03: format_value_data,
+    0x04: format_value_data,
+    0x05: format_value_data,
+    0x06: format_value_data,
+    0x07: format_value_data,
+    0x08: format_value_data,
+}
+VARLEN_CATEGORY_LOOKUP = {
+    0x03: ("history values", HISTORY_VALUE_NAMES, HISTORY_VALUE_FUNS),
+    0x10: ("settings valu", SETTINGS_NAMES, SETTINGS_FUNS),
+    0xED: ("values values", VALUE_NAMES, VALUE_FUNS),
+    0x0F: ("mixed settings", MIXED_SETTINGS_NAMES, MIXED_SETTINGS_FUNS),
+}
+
+
+def decode_var_len(value, data_names, format_lookup):
+    """function expects user data after 4-byte prefix
+    bytes consumed start from data tpye
     """
     DATATYPE_POS = 0
     LENGHT_TYPE_POS = 1
@@ -115,9 +199,12 @@ def decode_var_len(value, data_names, format_fun):
 
     data_type = value[DATATYPE_POS]
     data_label = get_label(data_type, data_names)
+
+    format_fun = format_lookup[data_type]
     data_string = format_fun(data_type, data)
     consumed = 2 + length
     return f"{data_label}: {data_string}", consumed
+
 
 def decode_fixed_len(value):
     """function expects whole packet with 4-byte prefix
@@ -130,7 +217,7 @@ def decode_fixed_len(value):
     data_type = value[DATATYPE_POS]
     data_label = get_label(data_type, MIXED_SETTINGS_NAMES)
     data_string = format_mixed_settings(data_type, data)
-    consumed = 2 
+    consumed = 2
     return f"{data_label}: {data_string}", consumed
 
 
@@ -164,16 +251,21 @@ def start_of_packet(value):
     for offset, item in enumerate(value):
         if item == signature[0][1]:
             # slice from start of signature to end
-            result = signature_complete(value[offset-item[0]:], signature)
+
+            result = signature_complete(value[offset - signature[0][0] :], signature)
             if result == True:
-                return offset
+                return offset - signature[0][0]
     return -1
+
 
 from collections import namedtuple
 
-Header = namedtuple('Header', ['value_type','category_type', 'length'])
+Header = namedtuple("Header", ["value_type", "category_type", "length"])
+
+
 def decode_header(header_4b):
     return Header(VALUE_TYPES(header_4b[0]), CATEGORY_TYPES(header_4b[3]), 4)
+
 
 def handle_bulk_values(value):
     global buffer
@@ -202,31 +294,41 @@ def handle_single_value(value):
 def handle_one_value(value):
     header = decode_header(value)
 
-    if header.value_type == VALUE_TYPES.FIXED_LEN and len(value) < 6 or header.value_type == VALUE_TYPES.VAR_LEN and len(value) < 6:
+    if (
+        header.value_type == VALUE_TYPES.FIXED_LEN
+        and len(value) < 6
+        or header.value_type == VALUE_TYPES.VAR_LEN
+        and len(value) < 6
+    ):
         return -1
 
     result = ""
     consumed = header.length
     used = 0
     if header.value_type == VALUE_TYPES.FIXED_LEN:
-        result, used = decode_fixed_len(value[consumed:], header)    
+        result, used = decode_fixed_len(value[consumed:], header)
     if header.value_type == VALUE_TYPES.VAR_LEN:
-        data_named = DATA_NAMES_LOOKUP[header.category_type]
-        result, used = decode_var_len(value[consumed:], DATA_NAMES, format_value_data, header)
+        category = VARLEN_CATEGORY_LOOKUP[header.category_type]
+        result, used = decode_var_len(value[consumed:], category[1], category[2])
 
     consumed += used
     print(result, file=sys.stderr)
     return consumed
 
 
+UUID_HANDLER_TABLE = {
+    smart_shunt_ids["0027"]: handle_bulk_values,
+    smart_shunt_ids["0024"]: handle_single_value,
+    smart_shunt_ids["0021"]: handle_single_value,
+}
+
 if __name__ == "__main__":
 
     # victron on its protocol
     # https://community.victronenergy.com/questions/40048/victron-data-capture-via-bluetooth.html
 
-
     print("connect & sleep")
-    device = get_device_instance("fd:d4:50:0f:6c:1b")
+    device = get_device_instance("fd:d4:50:0f:6c:1b", UUID_HANDLER_TABLE)
     device.connect()
     print("sleep after connect")
     time.sleep(5)
