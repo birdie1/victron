@@ -160,7 +160,7 @@ class AnyDevice(gatt.Device):
 
     def services_resolved(self):
         super().services_resolved()
-
+        self.connected = True
         print("[%s] Resolved services" % (self.mac_address))
         for service in self.services:
             print(
