@@ -1,11 +1,10 @@
-'''
+"""
 interface classes for victron devices using pygatt
 all async event driven
-'''
+"""
 import gatt
 from gatt.gatt_linux import Characteristic
 import threading
-
 
 
 logger_name = "x"
@@ -140,16 +139,20 @@ def subscribe_notifications():
 
 
 class AnyDevice(gatt.Device):
-    def __init__(self, mac_address, manager,notification_table):
-      super().__init__(mac_address,manager,managed=True)
+    def __init__(self, mac_address, manager, notification_table):
+        super().__init__(mac_address, manager, managed=True)
+        self.notification_table = notification_table
+        self.connected = False
 
     def connect_succeeded(self):
         super().connect_succeeded()
         print("[%s] Connected" % (self.mac_address))
+        self.connected = True
 
     def connect_failed(self, error):
         super().connect_failed(error)
         print("[%s] Connection failed: %s" % (self.mac_address, str(error)))
+        self.connected = False
 
     def disconnect_succeeded(self):
         super().disconnect_succeeded()
@@ -185,16 +188,15 @@ class AnyDevice(gatt.Device):
             pass
 
     def characteristic_write_value_failed(self, characteristic, error):
-        print(f"write failed oncharactersitic {characteristic.uuid}:merror: {error}")
+        print(f"write failed on charactersitic {characteristic.uuid}:merror: {error}")
 
     def characteristic_value_updated(self, characteristic, value):
         try:
             if characteristic.uuid == "0000180a-0000-1000-8000-00805f9b34fb":
                 print("Firmware version:", value.decode("utf-8"))
-            if characteristic.uuid == smart_shunt_ids["0027"]:
-                handle_bulk_values(value)
-            if characteristic.uuid in smart_shunt_ids.values():
-                handler_fun = smart_shunt_ids[characteristic.uuid]
+
+            if characteristic.uuid in self.notification_table.keys():
+                handler_fun = self.notification_table[characteristic.uuid]
                 handler_fun(value)
             else:
                 print(
@@ -222,8 +224,10 @@ class AnyDevice(gatt.Device):
 
         firmware_version_characteristic.read_value()
 
+
 def get_device_instance(mac, notification_table):
-  return AnyDevice(mac, manager=manager, notification_table=notification_table)
+    return AnyDevice(mac, manager=manager, notification_table=notification_table)
+
 
 # init event loop
 manager = gatt.DeviceManager(adapter_name="hci0")

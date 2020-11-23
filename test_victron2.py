@@ -1,6 +1,7 @@
 from victron_gatt import AnyDevice, get_device_instance, smart_shunt_ids
 from _pytest import fixtures
 import pytest
+from pytest_mock import mocker
 from victron_2 import (
     UUID_HANDLER_TABLE,
     VARLEN_CATEGORY_LOOKUP,
@@ -11,6 +12,7 @@ from victron_2 import (
     VALUE_TYPES,
     CATEGORY_TYPES,
 )
+import victron_2
 import types
 import gatt
 
@@ -83,12 +85,21 @@ def test_decode_header():
         assert result.category_type == param[2]
 
 
-def test_battery_capacity():
+def test_battery_capacity(mocker):
     fixtures = [
-        ("0027", bytes.fromhex("0803190fff421027")),
+        ("0024", bytes.fromhex("0803190fff421027")),
     ]
+
+    logged_result = ""
+
+    def mocked_logger(text):
+        nonlocal logged_result
+        logged_result = text
 
     device = get_device_instance("", UUID_HANDLER_TABLE)
     for handle, data in fixtures:
         dummy_characteristic = types.SimpleNamespace(uuid=smart_shunt_ids[handle])
+        mocker.patch("victron_2.logger", mocked_logger)
+
         device.characteristic_value_updated(dummy_characteristic, data)
+        assert logged_result == "Battery Charge Status: 100.0%"
