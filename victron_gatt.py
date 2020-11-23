@@ -98,7 +98,13 @@ smart_shunt_ids = {
 }
 
 
-init_sequence = init_sequence_template()
+init_sequence = None
+
+
+def start_send_init_squence():
+    global init_sequence
+    init_sequence = init_sequence_template()
+    send_init_sequence()
 
 
 def send_init_sequence():
