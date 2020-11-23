@@ -3,6 +3,7 @@ from victron_gatt import (
     get_device_instance,
     send_init_sequence,
     smart_shunt_ids,
+    start_send_init_squence,
     subscribe_notifications,
 )
 import gatt
@@ -232,7 +233,13 @@ import subprocess
 def logger(text):
     print(text, file=sys.stderr)
     subprocess.run(
-        ["/usr/bin/logger", f"--id={os.getpid()}", "-t", "Smard Schund", text]
+        [
+            "/usr/bin/logger",
+            f"--id={os.getpid()}",
+            "-t",
+            "victron",
+            "Smard Schund:" + text,
+        ]
     )
 
 
@@ -349,7 +356,7 @@ def connect_loop():
         subscribe_notifications()
 
         print("send init seuqucene")
-        send_init_sequence()
+        start_send_init_squence()
         # threading.Timer(disconnect_timer, disconnect_loop).start()
         return (disconnect_timer, disconnect_loop)
     else:
