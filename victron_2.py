@@ -350,14 +350,14 @@ def connect_loop():
     print(f"connected:{device.connected}")
     if device.connected:
         next_time = datetime.now() + timedelta(seconds=disconnect_timer)
-        logger(f"connected until {next_time:%H:%M:%S}")
+        logger(f"BT connected until {next_time:%H:%M:%S}")
 
         print("subscribe notifications")
         subscribe_notifications()
 
         print("send init seuqucene")
         start_send_init_squence()
-        # threading.Timer(disconnect_timer, disconnect_loop).start()
+
         return (disconnect_timer, disconnect_loop)
     else:
         next_time = datetime.now() + timedelta(seconds=connect_retry_timer)
@@ -365,7 +365,6 @@ def connect_loop():
             f"error connecting to device {device.mac_address}, retry at {next_time:%H:%M:%S}"
         )
         return (connect_retry_timer, connect_loop)
-        # threading.Timer(connect_retry_timer, connect_loop).start()
 
 
 def disconnect_loop():
@@ -373,7 +372,7 @@ def disconnect_loop():
     print("disconnect")
     device.disconnect()
     next_time = datetime.now() + timedelta(seconds=connect_timer)
-    logger(f"disconnected, connecting again at {next_time:%H:%M:%S}")
+    logger(f"BT disconnected, connecting again at {next_time:%H:%M:%S}")
     print(f"connecting in {connect_timer}")
     return (connect_timer, connect_loop)
     # threading.Timer(connect_timer, connect_loop).start()
