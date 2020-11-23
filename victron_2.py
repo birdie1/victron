@@ -336,9 +336,12 @@ device = None
 
 def connect_loop():
     global device
+    import traceback
+
     print("connect")
+    traceback.print_exc()
     device.connect()
-    time.sleep(5)
+    time.sleep(0)
     print(f"connected:{device.connected}")
     if device.connected:
         next_time = datetime.now() + timedelta(seconds=disconnect_timer)
@@ -365,8 +368,8 @@ def disconnect_loop():
     print("disconnect")
     device.disconnect()
     next_time = datetime.now() + timedelta(seconds=connect_timer)
-    print(f"disconnected, connecting again at {next_time:%H:%M:%S} seconds")
-    logger(f"connecting in {connect_timer}")
+    logger(f"disconnected, connecting again at {next_time:%H:%M:%S} seconds")
+    print(f"connecting in {connect_timer}")
     return (connect_timer, connect_loop)
     # threading.Timer(connect_timer, connect_loop).start()
 
@@ -378,7 +381,7 @@ if __name__ == "__main__":
 
     print("prepare device")
     device = get_device_instance("fd:d4:50:0f:6c:1b", UUID_HANDLER_TABLE)
-    print("connect now")
+    print("start timer loop")
     next_state = (0, connect_loop)
     while True:
         time.sleep(next_state[0])
