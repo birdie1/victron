@@ -336,10 +336,8 @@ device = None
 
 def connect_loop():
     global device
-    import traceback
 
     print("connect")
-    traceback.print_exc()
     device.connect()
     time.sleep(0)
     print(f"connected:{device.connected}")
@@ -385,7 +383,7 @@ if __name__ == "__main__":
     next_state = (0, connect_loop)
     while True:
         time.sleep(next_state[0])
-        next_state[1]()
+        next_state = next_state[1]()
     print("connect done")
 
     # print("manager run")
