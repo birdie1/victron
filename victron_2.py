@@ -339,6 +339,7 @@ def connect_loop():
     print("connect")
     device.connect()
     time.sleep(5)
+    print(f"connected:{device.connected}")
     if device.connected:
         next_time = datetime.now() + timedelta(seconds=disconnect_timer)
         logger(f"connected until {next_time:%H:%M:%S}")
