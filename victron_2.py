@@ -354,10 +354,10 @@ def connect_loop():
 
         print("subscribe notifications")
         subscribe_notifications()
-
+        time.sleep(2)
         print("send init seuqucene")
         start_send_init_squence()
-
+        time.sleep(2)
         return (disconnect_timer, disconnect_loop)
     else:
         next_time = datetime.now() + timedelta(seconds=connect_retry_timer)
