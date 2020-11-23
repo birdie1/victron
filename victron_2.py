@@ -366,7 +366,7 @@ def disconnect_loop():
     print("disconnect")
     device.disconnect()
     next_time = datetime.now() + timedelta(seconds=connect_timer)
-    logger(f"disconnected, connecting again at {next_time:%H:%M:%S} seconds")
+    logger(f"disconnected, connecting again at {next_time:%H:%M:%S}")
     print(f"connecting in {connect_timer}")
     return (connect_timer, connect_loop)
     # threading.Timer(connect_timer, connect_loop).start()
