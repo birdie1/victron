@@ -364,6 +364,7 @@ def connect_loop():
         print(
             f"error connecting to device {device.mac_address}, retry at {next_time:%H:%M:%S}"
         )
+        logger(f"BT error connecting retry at {next_time:%H:%M:%S}")
         return (connect_retry_timer, connect_loop)
 
 
