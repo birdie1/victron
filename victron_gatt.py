@@ -133,10 +133,14 @@ def start_send_init_squence():
     send_init_sequence()
 
 
+import time
+
+
 def send_init_sequence():
     (c, b) = next(init_sequence)
     print(f"sending {c.uuid}, data{b}")
     c.write_value(b)
+    time.sleep(1)
 
 
 def send_ping():
