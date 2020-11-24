@@ -357,7 +357,7 @@ def connect_loop():
         time.sleep(2)
         print("send init seuqucene")
         start_send_init_squence()
-        time.sleep(2)
+        time.sleep(20)
         return (disconnect_timer, disconnect_loop)
     else:
         next_time = datetime.now() + timedelta(seconds=connect_retry_timer)
