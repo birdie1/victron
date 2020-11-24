@@ -1,4 +1,4 @@
-victron_protocol = Proto("victron",  "Victron precision shunt")
+victron_protocol = Proto("victron", "Victron precision shunt")
 local gatt = Dissector.get("btatt")
 local btatt_value_f = Field.new("btatt.value")
 local btatt_handle_f = Field.new("btatt.handle")
@@ -6,10 +6,10 @@ local btatt_opcode_f = Field.new("btatt.opcode")
 
 fields = victron_protocol.fields 
 
-fields.status   = ProtoField.uint8("victron.status",   "Status",   base.HEX)
+fields.status   = ProtoField.uint8("victron.status", "Status", base.HEX)
 fields.transaction_id = ProtoField.uint8 ("victron.transaction_id", "TransactionId", base.HEX)
-fields.remaining   = ProtoField.uint8("victron.remaining",   "Remainig pkts",   base.DEC)
-fields.protocol_type   = ProtoField.uint8("victron.protocol_type",   "prot type",   base.HEX)
+fields.remaining   = ProtoField.uint8("victron.remaining", "Remainig pkts", base.DEC)
+fields.protocol_type   = ProtoField.uint8("victron.protocol_type", "prot type", base.HEX)
 
 local value_types = {
 	[0x8c] = "Current",
@@ -42,10 +42,10 @@ local mixed_settings = {
 	[0xff] = fields.state_of_charge,
 }
 
-fields.command_category = ProtoField.uint32("victron.cmd_category",   "command category",   base.HEX, command_categories)
-fields.start_sequence   = ProtoField.uint32("victron.start_sequence",   "start_squence",   base.HEX)
-fields.data_type   = ProtoField.uint8("victron.data_type",   "data type",   base.HEX, data_types)
-fields.value   = ProtoField.uint8("victron.command",   "command",   base.HEX, value_types)
+fields.command_category = ProtoField.uint32("victron.cmd_category", "command category", base.HEX, command_categories)
+fields.start_sequence   = ProtoField.uint32("victron.start_sequence", "start_squence", base.HEX)
+fields.data_type   = ProtoField.uint8("victron.data_type", "data type", base.HEX, data_types)
+fields.value   = ProtoField.uint8("victron.command", "command", base.HEX, value_types)
 local settings_types = {
 	[0x00] = "set capacity!",
 	[0x01] = "set charged voltage!",
@@ -58,38 +58,58 @@ local settings_types = {
 	[0x08] = "set discharge floor!",
 	[0xff] = "Battery Charge Status", -- this should go into a separate table for category mixed_settings
 }
-fields.settings_value   = ProtoField.uint8("victron.settings",   "settings",   base.HEX, settings_types)
+fields.settings_value   = ProtoField.uint8("victron.settings", "settings", base.HEX, settings_types)
 
 local hist_types = {
-	[0x09] = "hist synchronizations",
-	[0x03] = "hist total caharge cycles",
-	[0x04] = "hist full discharges",
+	[0x00] = "hist: deepest discharge",
+	[0x01] = "hist: last discharge",
+	[0x02] = "hist: Average Discharge",
+	[0x03] = "hist: total charge cycles",
+	[0x04] = "hist: full discharges",
+	[0x05] = "hist: Cumulative Ah drawn",
+	[0x06] = "hist: Min battery voltage",
+	[0x07] = "hist: Max battery voltage",
+	[0x08] = "hist: Time since last full",
+	[0x09] = "hist: synchronizations",
+	[0x10] = "hist: Discharged Energy",
+	[0x11] = "hist: Charged Energy",
+	
 }
-fields.history = ProtoField.uint8("victron.history",   "history",   base.HEX, hist_types)
-fields.hist_synch = ProtoField.uint16("victron.hist_synch",   "hist synchronizations",   base.DEC)
-fields.hist_cycles = ProtoField.uint16("victron.cycles",   "hist charge cycles",   base.DEC)
-fields.hist_full_discharge = ProtoField.uint16("victron.hist_full_discharge",   "hist full discharges",   base.DEC)
+fields.history = ProtoField.uint8("victron.history", "history", base.HEX, hist_types)
+fields.hist_synch = ProtoField.uint16("victron.hist_synch", hist_types[0x09], base.DEC)
+fields.hist_cycles = ProtoField.uint16("victron.cycles", hist_types[0x03], base.DEC)
+fields.hist_deepest_discharge = ProtoField.float("victron.hist_deepest_discharge", hist_types[0x00], {" Ah"}, base.UNIT_STRING)
+fields.hist_last_discharge = ProtoField.float("victron.hist_last_discharge", hist_types[0x01], {" Ah"}, base.UNIT_STRING)
+fields.hist_avrg_discharge = ProtoField.float("victron.hist_avrg_discharge", hist_types[0x02], {" Ah"}, base.UNIT_STRING)
+fields.hist_full_discharge = ProtoField.uint16("victron.hist_full_discharge", hist_types[0x04], base.DEC)
+fields.hist_cum_drawn = ProtoField.float("victron.cum_drawn", hist_types[0x05], {" Ah"}, base.UNIT_STRING)
+fields.hist_min_bat = ProtoField.float("victron.hist_min_bat", hist_types[0x06], {" V"}, base.UNIT_STRING)
+fields.hist_max_bat = ProtoField.float("victron.hist_max_bat", hist_types[0x07], {" V"}, base.UNIT_STRING)
+fields.hist_time_full = ProtoField.int32("victron.hist_time_full", hist_types[0x08])
+fields.hist_discharged_energy = ProtoField.float("victron.hist_discharged_energy",  hist_types[0x10], {" kWh"}, base.UNIT_STRING)
+fields.hist_charged_energy = ProtoField.float("victron.hist_charged_energy",  hist_types[0x11], {" kWh"}, base.UNIT_STRING)
 
-fields.settings_value   = ProtoField.uint8("victron.settings",   "settings",   base.HEX, settings_types)
+
+fields.settings_value   = ProtoField.uint8("victron.settings", "settings", base.HEX, settings_types)
 
 
 command_class_type = { [0x0] = "status reply?", [0x4] ="data reply?", [0x8] = "bulk values??"}
-fields.command_class   = ProtoField.uint8("victron.command_class",   "command class",  base.HEX, command_class_type)
+fields.command_class   = ProtoField.uint8("victron.command_class", "command class", base.HEX, command_class_type)
 
 data_size_type = { [0x08] = "8byte", [0x04] = "4ybte" , [0x02]="2byte", [0x01] = "1byte"}
-fields.data_size   = ProtoField.uint8("victron.data_size",   "data size",   base.DEC)
+fields.data_size   = ProtoField.uint8("victron.data_size", "data size", base.DEC)
 
-fields.payload   = ProtoField.bytes("victron.payload",   "payload",   base.SPACE)
-fields.data   = ProtoField.bytes("victron.data",   "data",   base.SPACE)
-fields.arguments   = ProtoField.bytes("victron.arguments",   "arguments",   base.SPACE)
-fields.crc   = ProtoField.uint8("victron.crc",   "crc",   base.HEX)
-fields.reserved   = ProtoField.uint8("victron.reserved",   "Reserved",   base.HEX)
+fields.payload   = ProtoField.bytes("victron.payload", "payload", base.SPACE)
+fields.data   = ProtoField.bytes("victron.data", "data", base.SPACE)
+fields.arguments   = ProtoField.bytes("victron.arguments", "arguments", base.SPACE)
+fields.crc   = ProtoField.uint8("victron.crc", "crc", base.HEX)
+fields.reserved   = ProtoField.uint8("victron.reserved", "Reserved", base.HEX)
 
 
-fields.voltage   = ProtoField.uint16("victron.voltage", "voltage",   base.HEX)
-fields.current   = ProtoField.int32("victron.current", "current",   base.DEC)
-fields.power   = ProtoField.int16("victron.power", "power",   base.DEC)
-fields.starter   = ProtoField.int16("victron.starter", "starter",   base.DEC)
+fields.voltage   = ProtoField.uint16("victron.voltage", "voltage", base.HEX)
+fields.current   = ProtoField.int32("victron.current", "current", base.DEC)
+fields.power   = ProtoField.int16("victron.power", "power", base.DEC)
+fields.starter   = ProtoField.int16("victron.starter", "starter", base.DEC)
 --fields.capacity   = ProtoField.float("victron.capacity", "capacity (%)", base.UNIT_STRING, { [0]="%"})
 fields.capacity   = ProtoField.int32("victron.capacity", "capacity (Ah)")
 fields.set_capacity   = ProtoField.int32("victron.set_capacity", "set capacity (Ah)")
@@ -107,10 +127,10 @@ fields.set_booltype  = ProtoField.uint8("victron.set_booltype", "bool type", bas
 fields.set_boolvalue  = ProtoField.bool("victron.set_boolvalue", "bool value")
 
 
-fields.unknown8   = ProtoField.uint8("victron.unknown8",   "Unknown8 value",   base.HEX)
-fields.unknown16   = ProtoField.uint16("victron.unknown16",   "Unknown16 value",   base.HEX)
-fields.unknown24   = ProtoField.uint24("victron.unknown24",   "Unknown24 value",   base.HEX)
-fields.unknown32   = ProtoField.uint32("victron.unknown32",   "Unknown32 value",   base.HEX)
+fields.unknown8   = ProtoField.uint8("victron.unknown8", "Unknown8 value", base.HEX)
+fields.unknown16   = ProtoField.uint16("victron.unknown16", "Unknown16 value", base.HEX)
+fields.unknown24   = ProtoField.uint24("victron.unknown24", "Unknown24 value", base.HEX)
+fields.unknown32   = ProtoField.uint32("victron.unknown32", "Unknown32 value", base.HEX)
 fields.unknown_bool_type  = ProtoField.uint8("victron.unknown_bool_type", "unknwon bool type", base.HEX)
 fields.unknown_bool_value  = ProtoField.bool("victron.unknown_bool_value", "unknown bool value")
 
@@ -131,11 +151,11 @@ function payload_dissector(buffer, pinfo, tree, size, command)
 	fun(buffer,pinfo,tree,size,command)
 end
 
-fields.device_id   = ProtoField.uint64("victron.device_id",   "device_id?",   base.HEX)
-local handle_types = {[0x0027] = "Bulk Values", [0x0024] = "Single Value"}
-fields.attribute_handle = ProtoField.uint16("victron.attribute_handle",   "attribute handle",   base.HEX, handle_types)
+fields.device_id   = ProtoField.uint64("victron.device_id", "device_id?", base.HEX)
+local packet_types = {[0x0027] = "Bulk Values", [0x0024] = "Single Value"}
+fields.packet_type = ProtoField.uint16("victron.packet_type", "packet type", base.HEX, packet_types)
 local direction = { [0x52] = "send", [0x1b] = "recv", [0x001b] = "recv"}
-fields.command_dir   = ProtoField.uint8("victron.command_dir",   "direction",   base.HEX, direction, 0xff)
+fields.command_dir   = ProtoField.uint8("victron.command_dir", "direction", base.HEX, direction, 0xff)
 
 
 function length_one(buffer, pinfo, subtree)
@@ -336,17 +356,27 @@ end
 
 function hist_category(buffer, pinfo,subtree, data_size)
 	local type_funcs = {
-		 [0x09] = fields.hist_synch,
-		 [0x03] = fields.hist_cycles,
-		 [0x04] = fields.hist_full_discharge,
+		[0x00] = {fields.hist_deepest_discharge,10},
+		[0x01] = {fields.hist_last_discharge,10},
+		[0x02] = {fields.hist_avrg_discharge,10},
+		[0x03] = {fields.hist_cycles,1},
+		[0x04] = {fields.hist_full_discharge,1},
+		[0x05] = {fields.hist_cum_drawn,10},
+		[0x06] = {fields.hist_min_bat,100},
+		[0x07] = {fields.hist_max_bat,100},
+		[0x08] = {fields.hist_time_full,1},
+		[0x09] = {fields.hist_synch,1},
+		[0x10] = {fields.hist_discharged_energy,100},
+		[0x11] = {fields.hist_charged_energy,100},
 	 }
 	 settings_type = buffer(0,1):le_uint() 
 	 --subtree:add_le(fields.history, buffer(0,1))
-	 fun = type_funcs[settings_type]
+	 fun = type_funcs[settings_type][1]
 	 if fun == nil then
 		 fun = fields.unknown32
 	 end
-	 subtree:add_le(fun, buffer(2,data_size))
+	 local value = buffer(2,data_size):le_int() / type_funcs[settings_type][2] 
+	 subtree:add_le(fun, buffer(2,data_size), value)
 	 return data_size
  end
 
@@ -476,7 +506,7 @@ function victron_protocol.dissector(buffer, pinfo, tree)
 	--subtree:add_le(fields.reserved, buffer(3,4))
 	
 	local subtree = tree:add(victron_protocol, buffer)
-	subtree:add_le(fields.attribute_handle, packet_type):set_generated()
+	subtree:add_le(fields.packet_type, packet_type):set_generated()
 	
 	print("start pinfo desegment_offset "..pinfo.desegment_offset or "nil")
 	print("start pinfo.desegment_len "..pinfo.desegment_len)
