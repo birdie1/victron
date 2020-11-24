@@ -355,7 +355,7 @@ function mixed_settings(buffer, pinfo, subtree)
 end
 
 function hist_category(buffer, pinfo,subtree, data_size)
-	local type_funcs = {
+	local hist_commands = {
 		[0x00] = {fields.hist_deepest_discharge,10},
 		[0x01] = {fields.hist_last_discharge,10},
 		[0x02] = {fields.hist_avrg_discharge,10},
@@ -369,13 +369,12 @@ function hist_category(buffer, pinfo,subtree, data_size)
 		[0x10] = {fields.hist_discharged_energy,100},
 		[0x11] = {fields.hist_charged_energy,100},
 	 }
-	 settings_type = buffer(0,1):le_uint() 
-	 --subtree:add_le(fields.history, buffer(0,1))
-	 fun = type_funcs[settings_type][1]
+	 command = buffer(0,1):le_uint() 
+	 fun = hist_commands[command][1]
 	 if fun == nil then
 		 fun = fields.unknown32
 	 end
-	 local value = buffer(2,data_size):le_int() / type_funcs[settings_type][2] 
+	 local value = buffer(2,data_size):le_int() / hist_commands[command][2] 
 	 subtree:add_le(fun, buffer(2,data_size), value)
 	 return data_size
  end

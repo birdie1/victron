@@ -44,6 +44,17 @@ class CATEGORY_TYPES(IntEnum):
     SETTINGS2 = 0x0F
 
 
+# CATEGORY_NAMES = {
+#     0x03190308: "history values",
+#     0x03190309: "history bools",
+#     0x10190308: "settings values",
+#     0x10190309: "settings bools",
+#     0xED190308: "values values",
+#     0xED190309: "values bools",
+#     0x0F190308: "mixed settings",
+# }
+
+
 TYPE_NAMES = {
     0x1: "unknown",
     0x2: "unknown",
@@ -51,44 +62,72 @@ TYPE_NAMES = {
     0x8: "unknown",
 }
 
-DATA_NAMES = {
-    0x7D: "Starter",
-    0x8C: "Current",
-    0x8D: "Voltage",
-    0x8E: "Power",
-    0x8F: "Capacity",
-    0xFE: "Capa (alt)??",
-}
-
-CATEGORY_NAMES = {
-    0x03190308: "history values",
-    0x03190309: "history bools",
-    0x10190308: "settings values",
-    0x10190309: "settings bools",
-    0xED190308: "values values",
-    0xED190309: "values bools",
-    0x0F190308: "mixed settings",
+DATA_VALUE_NAMES = {
+    0x7D: ("Starter", 100, "V"),
+    0x8C: ("Current", 1000, "A"),
+    0x8D: ("Voltage", 100, "V"),
+    0x8E: ("Power", 1, "W"),
+    0x8F: ("Capacity", 100, "%"),
+    # 0xFE: ("UNKNOWN",1,'A'),
 }
 
 
 MIXED_SETTINGS_NAMES = {
-    0xFF: "Battery Charge Status",
+    0xFF: ("Battery Charge Status", "%", 100, False),
 }
 
 
 HISTORY_VALUE_NAMES = {
-    0x09: "hist synchronizations",
-    0x03: "hist total caharge cycles",
-    0x04: "hist full discharges",
+    0x00: ("hist: deepest discharge", "Ah", 10, False),
+    0x01: ("hist: last discharge", "Ah", 10, False),
+    0x02: ("hist: Average Discharge", "Ah", 10, False),
+    0x03: ("hist: total charge cycles", "", 1, False),
+    0x04: ("hist: full discharges", "", 1, False),
+    0x05: ("hist: Cumulative Ah drawn", "Ah", 10, False),
+    0x06: ("hist: Min battery voltage", "V", 100, False),
+    0x07: ("hist: Max battery voltage", "V", 100, False),
+    0x08: ("hist: Time since last full", "sec", 1, False),
+    0x09: ("hist: synchronizations", "", 1, False),
+    0x10: ("hist: Discharged Energy", "Ah", 100, False),
+    0x11: ("hist: Charged Energy", "Ah", 100, False),
 }
 HISTORY_VALUE_FUNS = {}
+
+SETTINGS_VALUE_NAMES = {
+    0x00: ("set capacity", "Ah", 1, False),
+    0x01: ("set charged voltage", "V", 1, False),
+    0x02: ("set tail current", "A", 1, False),
+    0x03: ("set charged detection time", "sec", 1, False),
+    0x04: ("set charge eff. factor", "", 1, False),
+    0x05: ("set peukert coefficient", "", 1, False),
+    0x06: ("set current threshold", "%", 1, False),
+    0x07: ("set time-to-go avg. per.", "sec", 1, False),
+    0x08: ("set discharge floor", "V?", 1, False),
+}
+
+
+VALUE_VALUE_NAMES = {
+    0x8C: ("Current", "A", 1000, True),
+    0x8D: ("Voltage", "V", 100, False),
+    0x8E: ("Power", "W", 1.0, True),
+    0x7D: ("Starter", "V", 100, True),
+}
+
+
+VARLEN_CATEGORY_LOOKUP = {
+    0x03: ("history values", HISTORY_VALUE_NAMES),
+    0x10: ("settings valu", SETTINGS_VALUE_NAMES),
+    0xED: ("values values", VALUE_VALUE_NAMES),
+    0x0F: ("mixed settings", MIXED_SETTINGS_NAMES),
+}
+
 
 FIXEDLEN_CATEGORY_LOOKUP = {
     0x03190308: ("history values", HISTORY_VALUE_NAMES, None),
     0x03190309: "history bools",
     0x10190308: "settings values",
     0x10190309: "settings bools",
-    0xED190308: "values values",
+    0xED190308: ("values values", DATA_VALUE_NAMES, None),
     0xED190309: "values bools",
     0x0F190308: "mixed settings",
 }
@@ -101,100 +140,24 @@ def twos_comp(val, bits):
     return val  # return positive value as is
 
 
-def format_value_data(type_id, value):
-    if type_id == 0x7D:
-        converted = int.from_bytes(value, "little", signed=True)
-        return str(converted / 100) + "V"
-    if type_id == 0x8C:
-        converted = int.from_bytes(value, "little", signed=True)
-        return str(converted / 1000) + "A"
-    if type_id == 0x8D:
-        converted = int.from_bytes(value, "little", signed=False)
-        return str(converted / 100) + "V"
-    if type_id == 0x8E:
-        converted = int.from_bytes(value, "little", signed=True)
-        return str(converted) + "W"
-    if type_id == 0x8F:
-        converted = int.from_bytes(value, "little", signed=False)
-        percent = converted / 0xFFFF * 100
-        return str(percent) + "%"
-    if type_id == 0xFE:
-        converted = int.from_bytes(value, "little", signed=False)
-        percent = converted / 0xFFFF * 100
-        return str(percent) + "%"
+def format_value(type_id, value, config):
 
-    # else unknown
-    converted = int.from_bytes(value, "little", signed=False)
-    return converted
+    converted = int.from_bytes(value, "little", signed=config[3])
+    return str(converted / config[2]) + config[1]
 
 
-def format_mixed_settings(type_id, value):
-    if type_id == 0xFF:
-        converted = int.from_bytes(value, "little", signed=False)
-        return str(converted / 100) + "%"
-
-
-def get_label(data_type, data_name):
+def get_label(command, command_names):
     try:
-        return data_name[data_type]
+        return command_names[command][0]
     except:
-        return f"unknown type (0x{data_type:0X})"
+        return f"unknown type (0x{command:0X})"
 
 
-MIXED_SETTINGS_FUNS = {
-    0xFF: format_mixed_settings,
-}
-
-VALUE_FUNS = {
-    0x8C: format_value_data,
-    0x8D: format_value_data,
-    0x8E: format_value_data,
-    0x7D: format_value_data,
-}
-
-VALUE_NAMES = {
-    0x8C: "Current",
-    0x8D: "Voltage",
-    0x8E: "Power",
-    0x7D: "Starter",
-}
-
-SETTINGS_NAMES = {
-    0x00: "set capacity",
-    0x01: "set charged voltage",
-    0x02: "set tail current",
-    0x03: "set charged detection time",
-    0x04: "set charge eff. factor",
-    0x05: "set peukert coefficient",
-    0x06: "set current threshold",
-    0x07: "set time-to-go avg. per.",
-    0x08: "set discharge floor",
-}
-
-SETTINGS_FUNS = {
-    0x00: format_value_data,
-    0x01: format_value_data,
-    0x02: format_value_data,
-    0x03: format_value_data,
-    0x04: format_value_data,
-    0x05: format_value_data,
-    0x06: format_value_data,
-    0x07: format_value_data,
-    0x08: format_value_data,
-}
-VARLEN_CATEGORY_LOOKUP = {
-    0x03: ("history values", HISTORY_VALUE_NAMES, HISTORY_VALUE_FUNS),
-    0x10: ("settings valu", SETTINGS_NAMES, SETTINGS_FUNS),
-    0xED: ("values values", VALUE_NAMES, VALUE_FUNS),
-    0x0F: ("mixed settings", MIXED_SETTINGS_NAMES, MIXED_SETTINGS_FUNS),
-}
-
-
-def decode_var_len(value, data_names, format_lookup):
+def decode_var_len(value, config_table):
     """function expects user data after 4-byte prefix
     bytes consumed start from data tpye
     """
-    DATATYPE_POS = 0
+    COMMAND_POS = 0
     LENGHT_TYPE_POS = 1
     DATA_POS = 2
 
@@ -203,11 +166,15 @@ def decode_var_len(value, data_names, format_lookup):
     type_id = (length_type_field & 0xF0) >> 4
     data = value[DATA_POS : DATA_POS + length]
 
-    data_type = value[DATATYPE_POS]
-    data_label = get_label(data_type, data_names)
+    command = value[COMMAND_POS]
 
-    format_fun = format_lookup[data_type]
-    data_string = format_fun(data_type, data)
+    data_label = get_label(command, config_table)
+    import ipdb
+
+    # ipdb.set_trace()
+    # format_fun =   # format_lookup[data_type]
+    config = config_table[command]
+    data_string = format_value(command, data, config)
     consumed = 2 + length
     return f"{data_label}: {data_string}", consumed
 
@@ -222,7 +189,7 @@ def decode_fixed_len(value):
     data = value[DATA_POS]
     data_type = value[DATATYPE_POS]
     data_label = get_label(data_type, MIXED_SETTINGS_NAMES)
-    data_string = format_mixed_settings(data_type, data)
+    data_string = format_value(data_type, data)
     consumed = 2
     return f"{data_label}: {data_string}", consumed
 
@@ -318,11 +285,12 @@ def handle_one_value(value):
     result = ""
     consumed = header.length
     used = 0
+
     if header.value_type == VALUE_TYPES.FIXED_LEN:
         result, used = decode_fixed_len(value[consumed:], header)
     if header.value_type == VALUE_TYPES.VAR_LEN:
         category = VARLEN_CATEGORY_LOOKUP[header.category_type]
-        result, used = decode_var_len(value[consumed:], category[1], category[2])
+        result, used = decode_var_len(value[consumed:], category[1])
 
     consumed += used
     logger(result)

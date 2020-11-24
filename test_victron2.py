@@ -19,10 +19,10 @@ import gatt
 manager = gatt.DeviceManager(adapter_name="hci0")
 
 
-def test_handle_knwon():
+def test_handle_known():
     FIXTURES = [
         ("080319ed8c4446fcffff", "Current: -0.954A", 10),
-        ("080319ed8e42f3ff", "Power: -13W", 8),
+        ("080319ed8e42f3ff", "Power: -13.0W", 8),
         ("080319ed7d42ffff", "Starter: -0.01V", 8),
         ("080319ed8d422f05", "Voltage: 13.27V", 8),
     ]
@@ -31,7 +31,7 @@ def test_handle_knwon():
         input = bytes.fromhex(data)
         header = decode_header(input)
         category = VARLEN_CATEGORY_LOOKUP[header.category_type]
-        result, consumed = decode_var_len(input[4:], category[1], category[2])
+        result, consumed = decode_var_len(input[4:], category[1])
 
         assert result == expected
         assert consumed + PREFIX_LENGTH == length
