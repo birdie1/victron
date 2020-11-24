@@ -78,15 +78,15 @@ MIXED_SETTINGS_NAMES = {
 
 
 HISTORY_VALUE_NAMES = {
-    0x00: ("hist: deepest discharge", "Ah", 10, False),
-    0x01: ("hist: last discharge", "Ah", 10, False),
-    0x02: ("hist: Average Discharge", "Ah", 10, False),
+    0x00: ("hist: deepest discharge", "Ah", 10, True),
+    0x01: ("hist: last discharge", "Ah", 10, True),
+    0x02: ("hist: Average Discharge", "Ah", 10, True),
     0x03: ("hist: total charge cycles", "", 1, False),
     0x04: ("hist: full discharges", "", 1, False),
-    0x05: ("hist: Cumulative Ah drawn", "Ah", 10, False),
+    0x05: ("hist: Cumulative Ah drawn", "Ah", 10, True),
     0x06: ("hist: Min battery voltage", "V", 100, False),
     0x07: ("hist: Max battery voltage", "V", 100, False),
-    0x08: ("hist: Time since last full", "sec", 1, False),
+    0x08: ("hist: Time since last full", "sec", 1, True),
     0x09: ("hist: synchronizations", "", 1, False),
     0x10: ("hist: Discharged Energy", "Ah", 100, False),
     0x11: ("hist: Charged Energy", "Ah", 100, False),
