@@ -1,12 +1,15 @@
-from victron_gatt import AnyDevice, get_device_instance, smart_shunt_ids
+from victron_gatt import AnyDevice
+from victron_smartshunt import get_device_instance
+from victron_smartshunt import handle_uuid_map
+
 from _pytest import fixtures
 import pytest
 from pytest_mock import mocker
 from victron_2 import (
-    UUID_HANDLER_TABLE,
     VARLEN_CATEGORY_LOOKUP,
-    handle_one_value,
     decode_var_len,
+    handle_bulk_values,
+    handle_single_value,
     start_of_packet,
     decode_header,
     VALUE_TYPES,
@@ -41,9 +44,9 @@ def test_updated():
     fixtures = [
         ("0027", "080319ed8f42f8ff080319ed8c444efcffff0803"),
     ]
-    device = get_device_instance("", UUID_HANDLER_TABLE)
+    device = get_device_instance("", "test", handle_single_value, handle_bulk_values)
     for handle, data in fixtures:
-        dummy_characteristic = types.SimpleNamespace(uuid=smart_shunt_ids[handle])
+        dummy_characteristic = types.SimpleNamespace(uuid=handle_uuid_map[handle])
         device.characteristic_value_updated(dummy_characteristic, bytes.fromhex(data))
 
 
@@ -66,9 +69,9 @@ def test_real_errors():
             b"\xc5\x82\x99V\xa0\x00T\x01\x00\x00\xd1\xff\xff\xff\xff\x08\x03\x19\x03\x08",
         ),
     ]
-    device = get_device_instance("", UUID_HANDLER_TABLE)
+    device = get_device_instance("", "test", handle_single_value, handle_bulk_values)
     for handle, data in fixtures:
-        dummy_characteristic = types.SimpleNamespace(uuid=smart_shunt_ids[handle])
+        dummy_characteristic = types.SimpleNamespace(uuid=handle_uuid_map[handle])
         device.characteristic_value_updated(dummy_characteristic, data)
 
 
@@ -96,9 +99,9 @@ def test_battery_capacity(mocker):
         nonlocal logged_result
         logged_result = text
 
-    device = get_device_instance("", UUID_HANDLER_TABLE)
+    device = get_device_instance("", "test", handle_single_value, handle_bulk_values)
     for handle, data in fixtures:
-        dummy_characteristic = types.SimpleNamespace(uuid=smart_shunt_ids[handle])
+        dummy_characteristic = types.SimpleNamespace(uuid=handle_uuid_map[handle])
         mocker.patch("victron_2.logger", mocked_logger)
 
         device.characteristic_value_updated(dummy_characteristic, data)

@@ -1,19 +1,15 @@
 #!/usr/bin/env python
-from victron_gatt import (
-    get_device_instance,
-    send_init_sequence,
-    smart_shunt_ids,
-    start_send_init_squence,
-    subscribe_notifications,
-)
-import gatt
-from gatt.gatt_linux import Characteristic
 import threading
 import os
 import sys
 import time
 from datetime import datetime, timedelta
+from victron_smartshunt import get_device_instance
 import ipdb
+
+
+# victron on its protocol
+# https://community.victronenergy.com/questions/40048/victron-data-capture-via-bluetooth.html
 
 ############################ wireshark
 # 1.)mkfifo /tmp/hci_dump.pcap
@@ -297,69 +293,62 @@ def handle_one_value(value):
     return consumed
 
 
-UUID_HANDLER_TABLE = {
-    smart_shunt_ids["0027"]: handle_bulk_values,
-    smart_shunt_ids["0024"]: handle_single_value,
-    smart_shunt_ids["0021"]: handle_single_value,
-}
-
 connect_timer = 5 * 60
 disconnect_timer = 60
 connect_retry_timer = 30
 device = None
 
 
-def connect_loop():
-    global device
-
-    print("connect")
+def connect_loop(device):
+    print(f"{device.name} connect")
     device.connect()
     time.sleep(0)
-    print(f"connected:{device.connected}")
+    print(f"{device.name} connected:{device.connected}")
     if device.connected:
         next_time = datetime.now() + timedelta(seconds=disconnect_timer)
-        logger(f"BT connected until {next_time:%H:%M:%S}")
+        logger(f"{device.name} BT connected until {next_time:%H:%M:%S}")
 
-        print("subscribe notifications")
-        subscribe_notifications()
+        print(f"{device.name} subscribe notifications")
+        device.subscribe_notifications()
         time.sleep(2)
-        print("send init seuqucene")
-        start_send_init_squence()
+        print(f"{device.name} send init seuqucene")
+        device.start_send_init_squence()
         time.sleep(20)
         return (disconnect_timer, disconnect_loop)
     else:
         next_time = datetime.now() + timedelta(seconds=connect_retry_timer)
         print(
-            f"error connecting to device {device.mac_address}, retry at {next_time:%H:%M:%S}"
+            f"{device.name} error connecting to device {device.mac_address}, retry at {next_time:%H:%M:%S}"
         )
-        logger(f"BT error connecting retry at {next_time:%H:%M:%S}")
+        logger(f"{device.name} BT error connecting retry at {next_time:%H:%M:%S}")
         return (connect_retry_timer, connect_loop)
 
 
-def disconnect_loop():
-    global device
-    print("disconnect")
+def disconnect_loop(device):
+    print(f"{device.name} disconnect")
     device.disconnect()
     next_time = datetime.now() + timedelta(seconds=connect_timer)
-    logger(f"BT disconnected, connecting again at {next_time:%H:%M:%S}")
-    print(f"connecting in {connect_timer}")
+    logger(f"{device.name} BT disconnected, connecting again at {next_time:%H:%M:%S}")
+    print(f"{device.name} connecting in {connect_timer}")
     return (connect_timer, connect_loop)
-    # threading.Timer(connect_timer, connect_loop).start()
+
+
+def connect_disconnect_loop(device):
+    print(f"{device.name} start timer loop")
+    next_state = (0, connect_loop)
+    while True:
+        time.sleep(next_state[0])
+        next_state = next_state[1](device)
 
 
 if __name__ == "__main__":
 
-    # victron on its protocol
-    # https://community.victronenergy.com/questions/40048/victron-data-capture-via-bluetooth.html
-
     print("prepare device")
-    device = get_device_instance("fd:d4:50:0f:6c:1b", UUID_HANDLER_TABLE)
-    print("start timer loop")
-    next_state = (0, connect_loop)
-    while True:
-        time.sleep(next_state[0])
-        next_state = next_state[1]()
-    print("connect done")
+    device = get_device_instance(
+        "fd:d4:50:0f:6c:1b", "SmartdSchund", handle_single_value, handle_bulk_values
+    )
+    t1 = threading.Thread(target=connect_disconnect_loop, args=(device), daemon=True)
+    t1.start()
 
     # print("manager run")
     # manager.run()
