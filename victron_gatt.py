@@ -148,10 +148,18 @@ class AnyDevice(gatt.Device):
 
     def send_init_sequence(self):
         (uuid, handle, data) = next(init_sequence)
+        if uuid not in self.characteristics:
+            # this should not happen. send_init is triggered before characteristics are complete
+            self.characteristics_missing()
         c = self.characteristics[uuid]
         print(f"sending {handle}, data{data}")
         c.write_value(data)
         time.sleep(1)
+
+    def characteristics_missing(self):
+        print(f"connected but characteristics not yet enumerated, sleep an retry")
+        time.sleep(2)
+        self.start_send_init_squence()
 
     def send_ping(self):
         print("send ping")
