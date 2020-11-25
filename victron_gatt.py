@@ -138,8 +138,9 @@ class AnyDevice(gatt.Device):
 
     def subscribe_notifications(self):
         print("subscribe notifications")
-        for key, c in self.handle_uuid_map:
-            print(f"notificaions for {key}: {c.uuid}")
+        for key, uuid in self.handle_uuid_map.items():
+            print(f"notificaions for {key}: {uuid}")
+            c = self.characteristics[uuid]
             c.enable_notifications()
         print("enable notifications done")
 
