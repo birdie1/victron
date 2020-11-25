@@ -96,10 +96,11 @@ def init_sequence_template():
         ########### END copied from wireshark
     ]
     for packet in stuff:
-        c = handle_uuid_map[packet[0]]
+        handle = packet[0]
+        uuid = handle_uuid_map[handle]
         hs = packet[1]
-        b = bytearray.fromhex(hs)
-        yield (c, b)
+        data = bytearray.fromhex(hs)
+        yield (uuid, handle, data)
 
 
 ping = [

@@ -147,10 +147,10 @@ class AnyDevice(gatt.Device):
         self.send_init_sequence()
 
     def send_init_sequence(self):
-        (uuid, b) = next(init_sequence)
+        (uuid, handle, data) = next(init_sequence)
         c = self.characteristics[uuid]
-        print(f"sending {c.uuid}, data{b}")
-        c.write_value(b)
+        print(f"sending {handle}, data{data}")
+        c.write_value(data)
         time.sleep(1)
 
     def send_ping(self):
@@ -159,7 +159,7 @@ class AnyDevice(gatt.Device):
             c = self.characteristics[self.handle_uuid_map[packet[0]]]
             hs = packet[1]
             b = bytearray.fromhex(hs)
-            print(f"sending {c.uuid}, data{b}")
+            print(f"sending {packet[0]}, data{b}")
             c.write_value(b)
         print("send ping done")
 
