@@ -138,9 +138,6 @@ class AnyDevice(gatt.Device):
 
     def subscribe_notifications(self):
         print("subscribe notifications")
-        if not self.characteristics:
-            print("characteristics still emnpty. sleep")
-            time.sleep(2)
         for key, uuid in self.handle_uuid_map.items():
             print(f"notificaions for {key}: {uuid}")
             c = self.characteristics[uuid]
