@@ -14,22 +14,41 @@ fields.protocol_type   = ProtoField.uint8("victron.protocol_type", "prot type", 
 local value_types = {
 	[0x8c] = "SmartShunt Current",
 	[0x8d] = "Victron Voltage",
-	[0x8e] = "Victron Power",
+	[0x8e] = "SmartShunt Power",
 	[0x7d] = "SmartShunt Starter",
 	[0x8f] = "SmartSolar Battery Current",
+	[0xbd] = "SmartSolar Solar Current",
+	[0xbc] = "SmartSolar Power",
+	[0xbb] = "SmartSolar Solar Voltage",
+	[0xef] = "SmartSolar Setting Battery Voltage",
+	[0xf0] = "SmartSolar Setting Charge Current",
+	[0xf6] = "SmartSolar Setting Float Voltage",
+
 }
+fields.value   = ProtoField.uint8("victron.command", "command", base.HEX, value_types)
 fields.current   = ProtoField.float("victron.current", value_types[0x8c], {" A"},  base.UNIT_STRING)
 fields.voltage   = ProtoField.float("victron.voltage", value_types[0x8d], {" V"},  base.UNIT_STRING)
 fields.power   = ProtoField.float("victron.power", value_types[0x8e], {" w"}, base.UNIT_STRING)
 fields.starter   = ProtoField.float("victron.starter", value_types[0x7d], {"V"}, base.UNIT_STRING)
 fields.battery_current   = ProtoField.float("victron.battery_current", value_types[0x8f], {"A"}, base.UNIT_STRING)
+fields.solar_current   = ProtoField.float("victron.solar_current", value_types[0x8d], {"A"}, base.UNIT_STRING)
+fields.solar_volt   = ProtoField.float("victron.solar_volt", value_types[0x8d], {"V"}, base.UNIT_STRING)
+fields.solar_power   = ProtoField.float("victron.solarpower", value_types[0xbc], {" w"}, base.UNIT_STRING)
+fields.float_voltage   = ProtoField.float("victron.float_voltage", value_types[0xf6], {" V"}, base.UNIT_STRING)
+fields.set_battery_voltage   = ProtoField.uint16("victron.set_battery_voltage", value_types[0xef], base.UNIT_STRING, {" V"})
+fields.set_charge_current   = ProtoField.uint16("victron.set_charge_current", value_types[0xf0], base.UNIT_STRING, {" A"})
 local value_commands = {
 	[0x8c] = {fields.current,1000},
 	[0x8d] = {fields.voltage,100},
 	[0x8e] = {fields.power,1}, --smartshunt
 	[0x7d] = {fields.starter,100},
 	[0x8f] = {fields.battery_current,10},
-	[0xbc] = {fields.power,100}, -- smartsolar
+	[0xbc] = {fields.solar_power,100}, -- smartsolar
+	[0xbd] = {fields.solar_current,10}, -- smartsolar
+	[0xbb] = {fields.solar_volt,100}, -- smartsolar
+	[0xef] = {fields.set_battery_voltage,1}, -- smartsolar setting
+	[0xf0] = {fields.set_charge_current,1}, --smartsolar setting
+	[0xf6] = {fields.float_voltage,100}, --smartsolar setting
 }
 
 
@@ -63,7 +82,7 @@ local mixedsetting_commands = {
 fields.command_category = ProtoField.uint32("victron.cmd_category", "command category", base.HEX, command_categories)
 fields.start_sequence   = ProtoField.uint32("victron.start_sequence", "start_squence", base.HEX)
 fields.data_type   = ProtoField.uint8("victron.data_type", "data type", base.HEX, data_types)
-fields.value   = ProtoField.uint8("victron.command", "command", base.HEX, value_types)
+
 
 
 local hist_types = {
