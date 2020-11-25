@@ -2,6 +2,7 @@
 interface classes for victron devices using pygatt
 all async event driven
 """
+from time import sleep
 import gatt
 from gatt.gatt_linux import Characteristic
 import threading
@@ -138,6 +139,9 @@ class AnyDevice(gatt.Device):
 
     def subscribe_notifications(self):
         print("subscribe notifications")
+        if not self.characteristics:
+            print("characteristics empty, sleep")
+            time.sleep(2)
         for key, uuid in self.handle_uuid_map.items():
             print(f"notificaions for {key}: {uuid}")
             c = self.characteristics[uuid]
