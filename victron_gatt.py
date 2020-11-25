@@ -138,9 +138,8 @@ class AnyDevice(gatt.Device):
 
     def subscribe_notifications(self):
         print("subscribe notifications")
-        for key, c in self.characteristics.items():
-            # nachgucken was c so anbietet. gibt es handles?
-            print(f"notificaions for end={c.uuid}")
+        for key, c in self.handle_uuid_map:
+            print(f"notificaions for {key}: {c.uuid}")
             c.enable_notifications()
         print("enable notifications done")
 
@@ -151,8 +150,7 @@ class AnyDevice(gatt.Device):
 
     def send_init_sequence(self):
         (uuid, handle, data) = next(init_sequence)
-        if uuid not in self.characteristics:
-            # this should not happen. send_init is triggered before characteristics are complete
+        if not self.characteristics:
             self.characteristics_missing()
         c = self.characteristics[uuid]
         print(f"sending {handle}, data{data}")
