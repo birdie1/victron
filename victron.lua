@@ -10,6 +10,15 @@ fields.status   = ProtoField.uint8("victron.status", "Status", base.HEX)
 fields.transaction_id = ProtoField.uint8 ("victron.transaction_id", "TransactionId", base.HEX)
 fields.remaining   = ProtoField.uint8("victron.remaining", "Remainig pkts", base.DEC)
 fields.protocol_type   = ProtoField.uint8("victron.protocol_type", "prot type", base.HEX)
+fields.command_category = ProtoField.uint32("victron.cmd_category", "command category", base.HEX, command_categories)
+fields.start_sequence   = ProtoField.uint32("victron.start_sequence", "start_squence", base.HEX)
+
+local data_types = {
+	[0x08] = "value (has length)",
+	[0x09] = "bool (1byte fixed len)",
+}
+fields.data_type   = ProtoField.uint8("victron.data_type", "data type", base.HEX, data_types)
+
 
 local value_types = {
 	[0x8c] = "SmartShunt Current",
@@ -61,11 +70,8 @@ local command_categories = {
 	[0xed190308] = "values values",
 	[0xed190309] = "values bools",
 	[0x0f190308] = "mixed settings",
-}
-
-local data_types = {
-	[0x08] = "value (has length)",
-	[0x09] = "bool (1byte fixed len)",
+	[0xed190008] = "Orion Values",
+	[0xee190008] = "Orion Settings",
 }
 
 local mixedsetting_types={
@@ -79,11 +85,34 @@ local mixedsetting_commands = {
 	[0xff] = {fields.state_of_charge,100},
 }
 
-fields.command_category = ProtoField.uint32("victron.cmd_category", "command category", base.HEX, command_categories)
-fields.start_sequence   = ProtoField.uint32("victron.start_sequence", "start_squence", base.HEX)
-fields.data_type   = ProtoField.uint8("victron.data_type", "data type", base.HEX, data_types)
+local orion_types = {
+	[0xbb] = "Orion Input Voltage",
+	[0xe9] = "Orion Set Delayed start voltage delay",
+}
+fields.orion   = ProtoField.uint8("victron.orion", "orion command", base.HEX, orion_types)
+fields.orion_in_volt = ProtoField.float("victron.orion_in_volt", orion_types[0xbb], {" V"}, base.DEC or base.UNIT_STRING)
+fields.start_delay = ProtoField.float("victron.start_delay", orion_types[0xe9], {" sec"}, base.DEC or base.UNIT_STRING)
+local orion_commands = {
+	[0xbb] = {fields.orion_in_volt,100},
+	[0xe9] = {fields.start_delay,10},
+}
 
-
+local orionsettings_types = {
+	[0x36] = "Orion Shutdown Voltage",
+	[0x37] = "Orion Start Voltage",
+	[0x38] = "Orion Delayed Start Voltage",
+	[0x39] = "Orion Start Delay",
+}
+fields.orion_settings   = ProtoField.uint8("victron.orion_settings", "orion settings", base.HEX, orionsettings_types)
+fields.orion_shutdown_voltage = ProtoField.float("victron.orion_shutdown_voltage", orionsettings_types[0x36], {" V"}, base.DEC or base.UNIT_STRING)
+fields.orion_start_voltage = ProtoField.float("victron.orion_start_voltage", orionsettings_types[0x37], {" V"}, base.DEC or base.UNIT_STRING)
+fields.orion_delayed_voltage = ProtoField.float("victron.orion_delayed_voltage", orionsettings_types[0x38], {" V"}, base.DEC or base.UNIT_STRING)
+local orionsettings_commands = {
+	[0x36] = {fields.orion_shutdown_voltage, 100},
+	[0x37] = {fields.orion_start_voltage, 100},
+	[0x38] = {fields.orion_delayed_voltage, 100},
+	[0x39] = {fields.start_delay, 1},
+}
 
 local hist_types = {
 	[0x00] = "hist: deepest discharge",
@@ -181,9 +210,9 @@ local settings_commands = {
 	[0x08] = {fields.set_dis_floor,10},	
 }
 
-fields.unknown8   = ProtoField.uint8("victron.unknown8", "Unknown8 value", base.HEX)
-fields.unknown16   = ProtoField.uint16("victron.unknown16", "Unknown16 value", base.HEX)
-fields.unknown24   = ProtoField.uint24("victron.unknown24", "Unknown24 value", base.HEX)
+fields.unknown8   = ProtoField.uint8("victron.unknown8", "Unknown8 value", base.HEX_HEX)
+fields.unknown16   = ProtoField.uint16("victron.unknown16", "Unknown16 value", base.DEC_HEX)
+fields.unknown24   = ProtoField.uint24("victron.unknown24", "Unknown24 value", base.DEC_HEX)
 fields.unknown32   = ProtoField.int32("victron.unknown32", "Unknown32 value", base.DEC)
 fields.unknown_bool_type  = ProtoField.uint8("victron.unknown_bool_type", "unknwon bool type", base.HEX)
 fields.unknown_bool_value  = ProtoField.bool("victron.unknown_bool_value", "unknown bool value")
@@ -204,7 +233,7 @@ function payload_dissector(buffer, pinfo, tree, size, command)
 end
 
 fields.device_id   = ProtoField.uint64("victron.device_id", "device_id?", base.HEX)
-local packet_types = {[0x0027] = "Bulk Values", [0x0024] = "Single Value"}
+local packet_types = {[0x0027] = "Bulk Values", [0x0024] = "Single Value", [0x001e] = "Orion Single Value"}
 fields.packet_type = ProtoField.uint16("victron.packet_type", "packet type", base.HEX, packet_types)
 local direction = { [0x52] = "send", [0x1b] = "recv", [0x001b] = "recv"}
 fields.command_dir   = ProtoField.uint8("victron.command_dir", "direction", base.HEX, direction, 0xff)
@@ -310,6 +339,17 @@ function single_value(buffer,pinfo,subtree)
 	if buffer(0,4):le_uint() == 0x0f190308 then
 		subtree:add_le(fields.mixedsettings, buffer(4,1))
 		return command_category(buffer(4),pinfo,subtree, data_size_nibble, mixedsetting_commands)
+	end
+	
+	if buffer(0,4):le_uint() == 0xed190008 then
+		subtree:add_le(fields.orion, buffer(4,1))
+		return command_category(buffer(4),pinfo,subtree, data_size_nibble, orion_commands)
+	end
+	
+		
+	if buffer(0,4):le_uint() == 0xee190008 then
+		subtree:add_le(fields.orion_settings, buffer(4,1))
+		return command_category(buffer(4),pinfo,subtree, data_size_nibble, orionsettings_commands)
 	end
 	
 	if  data_type== 0x09 then
