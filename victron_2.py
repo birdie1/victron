@@ -47,24 +47,6 @@ class VALUE_TYPES(IntEnum):
     VAR_LEN = 0x08
 
 
-class CATEGORY_TYPES(IntEnum):
-    HISTORY = 0x03
-    SETTINGS = 0x10
-    VALUES = 0xED
-    SETTINGS2 = 0x0F
-
-
-# CATEGORY_NAMES = {
-#     0x03190308: "history values",
-#     0x03190309: "history bools",
-#     0x10190308: "settings values",
-#     0x10190309: "settings bools",
-#     0xED190308: "values values",
-#     0xED190309: "values bools",
-#     0x0F190308: "mixed settings",
-# }
-
-
 TYPE_NAMES = {
     0x1: "unknown",
     0x2: "unknown",

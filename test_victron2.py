@@ -13,7 +13,6 @@ from victron_2 import (
     start_of_packet,
     decode_header,
     VALUE_TYPES,
-    CATEGORY_TYPES,
 )
 import victron_2
 import types

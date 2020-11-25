@@ -66,7 +66,6 @@ local command_categories = {
 	[0x03190309] = "history bools",
 	[0x10190308] = "settings values",
 	[0x10190309] = "settings bools",
-	[0x03] = "unknown",
 	[0xed190308] = "values values",
 	[0xed190309] = "values bools",
 	[0x0f190308] = "mixed settings",
