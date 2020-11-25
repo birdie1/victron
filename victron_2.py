@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 import threading
+import argparse
 import os
 import sys
 import time
 from datetime import datetime, timedelta
-from victron_smartshunt import get_device_instance
 import ipdb
-
+import victron_orion
+import victron_smartsolar
+import victron_smartshunt
 
 # victron on its protocol
 # https://community.victronenergy.com/questions/40048/victron-data-capture-via-bluetooth.html
@@ -20,6 +22,17 @@ import ipdb
 ######python convert values
 # binascii.hexlify(struct.pack('<h',10*60))
 # struct.unpack('>f',b'\x03\x84')
+
+####### howto get handle->uuid map
+# use bluetoothctl, connect device
+# in characteristic enumeration:
+# find "Characteristic" entry
+# take uuid, take "char" + 1
+# Example:
+# [NEW] Characteristic
+#        /org/bluez/hci0/dev_FD_D4_50_0F_6C_1B/service001f/char0020
+#        306b0002-b081-4037-83dc-e59fcc3cdfd0
+# handle: 0021, uuid:306b0002-b081-4037-83dc-e59fcc3cdfd0
 
 # original start of values sequence
 VALUE_PREFIX = bytes.fromhex("08031903")
@@ -341,12 +354,33 @@ def connect_disconnect_loop(device):
         next_state = next_state[1](device)
 
 
+# F9:8E:1C:EC:9C:72 SmartSolar HQ2027LDKCU
+# E7:79:E6:1D:EF:04 Orion
 if __name__ == "__main__":
 
-    print("prepare device")
-    device = get_device_instance(
-        "fd:d4:50:0f:6c:1b", "SmartdSchund", handle_single_value, handle_bulk_values
+    parser = argparse.ArgumentParser(description="victron BT reader")
+    parser.add_argument(
+        "-d",
+        "--device",
+        metavar="NUM",
+        type=int,
+        help="0: smartshunt, 1: smartsolar, 2:orion",
+        required=True,
     )
+    args = parser.parse_args()
+
+    DEVICES = [
+        (victron_smartshunt.get_device_instance, "fd:d4:50:0f:6c:1b", "SmartdSchund"),
+        (victron_smartsolar.get_device_instance, "F9:8E:1C:EC:9C:72", "SmartSolar"),
+        (victron_orion.get_device_instance, "E7:79:E6:1D:EF:04", "Orion"),
+    ]
+
+    device_fun = DEVICES[args.device][0]
+    mac = DEVICES[args.device][1]
+    name = DEVICES[args.device][2]
+
+    print(f"prepare device {name}")
+    device = device_fun(mac, name, handle_single_value, handle_bulk_values)
     t1 = threading.Thread(target=connect_disconnect_loop, args=(device,), daemon=False)
     t1.start()
 
