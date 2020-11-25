@@ -97,15 +97,6 @@ handle_uuid_map = {
 }
 
 
-services = {
-    "00001801-0000-1000-8000-00805f9b34fb": "generic attributes",
-    "00001800-0000-1000-8000-00805f9b34fb": "generic access",
-    "306b0001-b081-4037-83dc-e59fcc3cdfd0": "vendor, smartsolar & BMV712 ",
-    "68c10001-b17f-4d3a-a290-34ad6499937c": "vendor, VE.Direct Smart",
-    "97580001-ddf1-48be-b73e-182664615d8e": "vendor, VE.Direct Smart",
-}
-
-
 def get_device_instance(mac, name, handle_single_value, handle_bulk_values):
     UUID_FUNCTION_TABLE = {
         handle_uuid_map["0027"]: handle_bulk_values,
@@ -119,4 +110,5 @@ def get_device_instance(mac, name, handle_single_value, handle_bulk_values):
         ping=ping,
         handle_uuid_map=handle_uuid_map,
         name=name,
+        init_sequence_template=init_sequence_template,
     )

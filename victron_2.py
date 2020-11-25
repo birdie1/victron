@@ -293,7 +293,7 @@ def handle_one_value(value):
     return consumed
 
 
-connect_timer = 5 * 60
+connect_timer = 30  # during dev. for prod: 5 * 60
 disconnect_timer = 60
 connect_retry_timer = 30
 device = None
@@ -347,7 +347,7 @@ if __name__ == "__main__":
     device = get_device_instance(
         "fd:d4:50:0f:6c:1b", "SmartdSchund", handle_single_value, handle_bulk_values
     )
-    t1 = threading.Thread(target=connect_disconnect_loop, args=(device), daemon=True)
+    t1 = threading.Thread(target=connect_disconnect_loop, args=(device,), daemon=False)
     t1.start()
 
     # print("manager run")

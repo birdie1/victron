@@ -22,10 +22,25 @@ logger_name = "x"
 #     print(f"trying char {key}")
 #     value.write_value(b)
 
+well_known_uuids = {
+    "00001801-0000-1000-8000-00805f9b34fb": "generic attributes",
+    "00001800-0000-1000-8000-00805f9b34fb": "generic access",
+    "306b0001-b081-4037-83dc-e59fcc3cdfd0": "vendor, smartsolar & BMV712 ",
+    "68c10001-b17f-4d3a-a290-34ad6499937c": "vendor, VE.Direct Smart",
+    "97580001-ddf1-48be-b73e-182664615d8e": "vendor, VE.Direct Smart",
+}
+
 
 class AnyDevice(gatt.Device):
     def __init__(
-        self, mac_address, name, manager, notification_table, ping, handle_uuid_map
+        self,
+        mac_address,
+        name,
+        manager,
+        notification_table,
+        ping,
+        handle_uuid_map,
+        init_sequence_template,
     ):
         super().__init__(mac_address, manager, managed=True)
         self.notification_table = notification_table
@@ -33,6 +48,7 @@ class AnyDevice(gatt.Device):
         self.ping = ping
         self.handle_uuid_map = handle_uuid_map
         self.name = name
+        self.init_sequence_template = init_sequence_template
 
     def connect_succeeded(self):
         super().connect_succeeded()
@@ -55,7 +71,7 @@ class AnyDevice(gatt.Device):
         for service in self.services:
             print(
                 "[%s]  Service [%s] (%s)"
-                % (self.mac_address, service.uuid, self.services[service.uuid])
+                % (self.mac_address, service.uuid, well_known_uuids[service.uuid])
             )
             for characteristic in service.characteristics:
                 print(
@@ -148,7 +164,9 @@ class AnyDevice(gatt.Device):
         print("send ping done")
 
 
-def gatt_device_instance(mac, name, notification_table, ping, handle_uuid_map):
+def gatt_device_instance(
+    mac, name, notification_table, ping, handle_uuid_map, init_sequence_template
+):
     return AnyDevice(
         mac,
         name,
@@ -156,6 +174,7 @@ def gatt_device_instance(mac, name, notification_table, ping, handle_uuid_map):
         notification_table=notification_table,
         ping=ping,
         handle_uuid_map=handle_uuid_map,
+        init_sequence_template=init_sequence_template,
     )
 
 
