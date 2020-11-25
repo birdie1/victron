@@ -77,10 +77,11 @@ def test_real_errors():
 
 def test_decode_header():
     fixtures = [
-        (bytes.fromhex("0803190f"), VALUE_TYPES.VAR_LEN, CATEGORY_TYPES.SETTINGS2),
-        (bytes.fromhex("09031903"), VALUE_TYPES.FIXED_LEN, CATEGORY_TYPES.HISTORY),
-        (bytes.fromhex("090319ed"), VALUE_TYPES.FIXED_LEN, CATEGORY_TYPES.VALUES),
-        (bytes.fromhex("0803190f"), VALUE_TYPES.VAR_LEN, CATEGORY_TYPES.SETTINGS2),
+        (bytes.fromhex("0803190f"), VALUE_TYPES.VAR_LEN, 0x0F190308),
+        (bytes.fromhex("09031903"), VALUE_TYPES.FIXED_LEN, 0x03190309),
+        (bytes.fromhex("090319ed"), VALUE_TYPES.FIXED_LEN, 0xED190309),
+        (bytes.fromhex("0803190f"), VALUE_TYPES.VAR_LEN, 0x0F190308),
+        (bytes.fromhex("080019ed"), VALUE_TYPES.VAR_LEN, 0xED190008),
     ]
     for param in fixtures:
         result = decode_header(param[0])

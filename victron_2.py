@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import re
 import threading
 import argparse
 import os
@@ -71,7 +72,7 @@ TYPE_NAMES = {
     0x8: "unknown",
 }
 
-DATA_VALUE_NAMES = {
+FIXED_DATA_NAMES = {
     0x7D: ("Starter", 100, "V"),
     0x8C: ("Current", 1000, "A"),
     0x8D: ("Voltage", 100, "V"),
@@ -100,7 +101,6 @@ HISTORY_VALUE_NAMES = {
     0x10: ("hist: Discharged Energy", "Ah", 100, False),
     0x11: ("hist: Charged Energy", "Ah", 100, False),
 }
-HISTORY_VALUE_FUNS = {}
 
 SETTINGS_VALUE_NAMES = {
     0x00: ("set capacity", "Ah", 1, False),
@@ -120,14 +120,33 @@ VALUE_VALUE_NAMES = {
     0x8D: ("Voltage", "V", 100, False),
     0x8E: ("Power", "W", 1.0, True),
     0x7D: ("Starter", "V", 100, True),
+    0x8F: ("SmartSolar Battery Current", "A", 10, True),
+    0xBC: ("SmartSolar Power", "P", 100, True),
+    0xBD: ("SmartSolar Solar Current", "A", 10, True),
+    0xBB: ("SmartSolar Solar Voltage", "V", 100, True),
+    0xEF: ("SmartSolar Setting Battery Voltage", "V", 1, True),
+    0xF0: ("SmartSolar Setting Charge Current", "A", 1, True),
+    0xF6: ("SmartSolar Setting Float Voltage", "V", 100, True),
 }
 
+ORION_SETTINGS_NAMES = {
+    0x36: ("Orion Shutdown Voltage", "V", 100, True),
+    0x37: ("Orion Start Voltage", "V", 100, True),
+    0x38: ("Orion Delayed Start Voltage", "V", 100, True),
+    0x39: ("Orion Start Delay", "sec", 1, True),
+}
 
+ORION_VALUE_NAMES = {
+    0xBB: ("Orion Input Voltage", "V", 100, True),
+    0xE9: ("Orion Set Delayed start voltage delay", "sec", 10, True),
+}
 VARLEN_CATEGORY_LOOKUP = {
-    0x03: ("history values", HISTORY_VALUE_NAMES),
-    0x10: ("settings valu", SETTINGS_VALUE_NAMES),
-    0xED: ("values values", VALUE_VALUE_NAMES),
-    0x0F: ("mixed settings", MIXED_SETTINGS_NAMES),
+    0x03190308: ("history values", HISTORY_VALUE_NAMES),
+    0x10190308: ("settings valu", SETTINGS_VALUE_NAMES),
+    0xED190308: ("values values", VALUE_VALUE_NAMES),
+    0x0F190308: ("mixed settings", MIXED_SETTINGS_NAMES),
+    0xED190008: ("Orion Values", ORION_VALUE_NAMES),
+    0xEE190008: ("Orion Settings", ORION_SETTINGS_NAMES),
 }
 
 
@@ -136,7 +155,7 @@ FIXEDLEN_CATEGORY_LOOKUP = {
     0x03190309: "history bools",
     0x10190308: "settings values",
     0x10190309: "settings bools",
-    0xED190308: ("values values", DATA_VALUE_NAMES, None),
+    0xED190308: ("values values", FIXED_DATA_NAMES, None),
     0xED190309: "values bools",
     0x0F190308: "mixed settings",
 }
@@ -150,7 +169,6 @@ def twos_comp(val, bits):
 
 
 def format_value(type_id, value, config):
-
     converted = int.from_bytes(value, "little", signed=config[3])
     return str(converted / config[2]) + config[1]
 
@@ -178,9 +196,6 @@ def decode_var_len(value, config_table):
     command = value[COMMAND_POS]
 
     data_label = get_label(command, config_table)
-    import ipdb
-
-    # ipdb.set_trace()
     # format_fun =   # format_lookup[data_type]
     config = config_table[command]
     data_string = format_value(command, data, config)
@@ -224,26 +239,29 @@ buffer = bytearray()
 
 def signature_complete(value, signature):
     try:
-        for pos, sig in signature:
-            if not value[pos] == sig:
+        for pos, sigs in signature:
+            for sig in sigs:
+                if value[pos] == sig:
+                    break  # go to outer loop, continue with next signature position
                 return False
         return True
     except:
         return False
 
 
-def start_of_packet(value):
-    signature = [
-        (1, 0x03),
-        (2, 0x19),
-    ]
-    for offset, item in enumerate(value):
-        if item == signature[0][1]:
-            # slice from start of signature to end
+SIGNATURE = [
+    (1, (0x03, 0x00)),
+    (2, (0x19,)),
+]
 
-            result = signature_complete(value[offset - signature[0][0] :], signature)
-            if result == True:
-                return offset - signature[0][0]
+
+def start_of_packet(value):
+
+    for offset, item in enumerate(value):
+        # slice from start of signature to end
+        result = signature_complete(value[offset - SIGNATURE[0][0] :], SIGNATURE)
+        if result == True:
+            return offset - SIGNATURE[0][0]
     return -1
 
 
@@ -253,7 +271,9 @@ Header = namedtuple("Header", ["value_type", "category_type", "length"])
 
 
 def decode_header(header_4b):
-    return Header(VALUE_TYPES(header_4b[0]), CATEGORY_TYPES(header_4b[3]), 4)
+    return Header(
+        VALUE_TYPES(header_4b[0]), int.from_bytes(bytes(header_4b[:4]), "little"), 4
+    )
 
 
 def handle_bulk_values(value):
@@ -265,12 +285,16 @@ def handle_bulk_values(value):
         consumed = handle_one_value(buffer[pos:])
         buffer = buffer[pos + consumed :]
         pos = start_of_packet(buffer)
-        if pos > 0 or pos < 0:  # TODO BUG: midnight hacking
+        if pos > 0:  # TODO BUG: midnight hacking
             unknown = buffer[:pos]
             print(f"unknown value in bulk: {unknown}")
+        if consumed == -1:
+            print("bulk: need more bytes")
+            return
 
 
 def handle_single_value(value):
+
     pos = start_of_packet(value)
     while pos >= 0:
         consumed = handle_one_value(value[pos:])
