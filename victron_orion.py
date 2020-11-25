@@ -165,9 +165,9 @@ handle_uuid_map = {
 
 def get_device_instance(mac, name, handle_single_value, handle_bulk_values):
     UUID_FUNCTION_TABLE = {
-        handle_uuid_map["0023"]: handle_single_value,
-        handle_uuid_map["0019"]: handle_single_value,
-        handle_uuid_map["000e"]: handle_single_value,
+        handle_uuid_map["0025"]: handle_single_value,
+        handle_uuid_map["001b"]: handle_single_value,
+        handle_uuid_map["000c"]: handle_single_value,
         handle_uuid_map["001e"]: handle_single_value,
         handle_uuid_map["0021"]: handle_bulk_values,
     }

@@ -69,9 +69,12 @@ class AnyDevice(gatt.Device):
         self.connected = True
         print("[%s] Resolved services" % (self.mac_address))
         for service in self.services:
+            if service.uuid in well_known_uuids:
+                char_name = well_known_uuids[service.uuid]
+            else:
+                char_name = "unknown endpoint"
             print(
-                "[%s]  Service [%s] (%s)"
-                % (self.mac_address, service.uuid, well_known_uuids[service.uuid])
+                "[%s]  Service [%s] (%s)" % (self.mac_address, service.uuid, char_name)
             )
             for characteristic in service.characteristics:
                 print(
