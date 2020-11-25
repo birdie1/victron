@@ -92,7 +92,7 @@ handle_uuid_map = {
     # 	/org/bluez/hci0/dev_E7_79_E6_1D_EF_04/service000e/char0016
     # 	97580006-ddf1-48be-b73e-182664615d8e
     # 	Vendor specific
-    "0016": "97580006-ddf1-48be-b73e-182664615d8e",
+    "0017": "97580006-ddf1-48be-b73e-182664615d8e",
     # [NEW] Descriptor (Handle 0x2000)
     # 	/org/bluez/hci0/dev_E7_79_E6_1D_EF_04/service000e/char0016/desc0018
     # 	00002902-0000-1000-8000-00805f9b34fb
@@ -119,7 +119,6 @@ handle_uuid_map = {
     # 	/org/bluez/hci0/dev_E7_79_E6_1D_EF_04/service0019/char001d/desc001f
     # 	00002902-0000-1000-8000-00805f9b34fb
     # 	Client Characteristic Configuration
-    "001e": "00002902-0000-1000-8000-00805f9b34fb",
     # [NEW] Characteristic (Handle 0x68ab)
     # 	/org/bluez/hci0/dev_E7_79_E6_1D_EF_04/service0019/char0020
     # 	306b0004-b081-4037-83dc-e59fcc3cdfd0
