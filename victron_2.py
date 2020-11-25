@@ -214,7 +214,7 @@ def logger(text):
             f"--id={os.getpid()}",
             "-t",
             "victron",
-            "Smard Schund:" + text,
+            text,
         ]
     )
 
@@ -354,6 +354,17 @@ def connect_disconnect_loop(device):
         next_state = next_state[1](device)
 
 
+def prepare_device(device):
+    device_fun = device[0]
+    mac = device[1]
+    name = device[2]
+
+    print(f"prepare device {name}")
+    device = device_fun(mac, name, handle_single_value, handle_bulk_values)
+    t1 = threading.Thread(target=connect_disconnect_loop, args=(device,), daemon=False)
+    t1.start()
+
+
 # F9:8E:1C:EC:9C:72 SmartSolar HQ2027LDKCU
 # E7:79:E6:1D:EF:04 Orion
 if __name__ == "__main__":
@@ -365,7 +376,7 @@ if __name__ == "__main__":
         metavar="NUM",
         type=int,
         help="0: smartshunt, 1: smartsolar, 2:orion",
-        required=True,
+        required=False,
     )
     args = parser.parse_args()
 
@@ -375,15 +386,11 @@ if __name__ == "__main__":
         (victron_orion.get_device_instance, "E7:79:E6:1D:EF:04", "Orion"),
     ]
 
-    device_fun = DEVICES[args.device][0]
-    mac = DEVICES[args.device][1]
-    name = DEVICES[args.device][2]
-
-    print(f"prepare device {name}")
-    device = device_fun(mac, name, handle_single_value, handle_bulk_values)
-    t1 = threading.Thread(target=connect_disconnect_loop, args=(device,), daemon=False)
-    t1.start()
-
+    if args.device:
+        prepare_device(DEVICES[args.device])
+    else:
+        for device in DEVICES:
+            prepare_device(device)
     # print("manager run")
     # manager.run()
     # while True:
