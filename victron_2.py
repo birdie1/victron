@@ -342,10 +342,9 @@ def connect_loop(device):
         next_time = datetime.now() + timedelta(seconds=disconnect_timer)
         logger(f"{device.name} BT connected until {next_time:%H:%M:%S}")
 
-        print(f"{device.name} subscribe notifications")
         device.subscribe_notifications()
         time.sleep(2)
-        print(f"{device.name} send init seuqucene")
+        print(f"{device.name} send init sequence")
         device.start_send_init_squence()
         time.sleep(20)
         return (disconnect_timer, disconnect_loop)

@@ -137,7 +137,7 @@ class AnyDevice(gatt.Device):
         c = self.characteristics[uuid]
         print(f"{self.name}: sending {handle}, data{data}")
         c.write_value(data)
-        time.sleep(1)
+        time.sleep(0)
 
     def characteristics_missing(self):
         print(f"{self.name}: connected but characteristics not yet enumerated, sleep an retry")
