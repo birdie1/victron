@@ -367,7 +367,7 @@ def connect_disconnect_loop(devices):
     while True:
         if connect_loop(devices[i]):
             next_time = datetime.now() + timedelta(seconds=disconnect_timer)
-            logger(f"{devices[i].name} BT connected until {next_time:%H:%M:%S}")
+            logger(f"{devices[i].name}: BT connected until {next_time:%H:%M:%S}")
             sleep(disconnect_timer)
 
         disconnect_loop(devices[i])
