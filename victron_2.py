@@ -9,6 +9,7 @@ import time
 from collections import namedtuple
 from datetime import datetime, timedelta
 from enum import IntEnum
+from time import sleep
 
 import ipdb
 
@@ -372,12 +373,16 @@ def disconnect_loop(device):
     return (connect_timer, connect_loop)
 
 
-def connect_disconnect_loop(device):
-    print(f"{device.name} start timer loop")
+def connect_disconnect_loop(devices):
+    # print(f"{device.name} start timer loop")
     next_state = (0, connect_loop)
+    i = 0
     while True:
-        time.sleep(next_state[0])
-        next_state = next_state[1](device)
+        connect_loop(devices[i])
+        sleep(disconnect_timer)
+        disconnect_loop(devices[i])
+        sleep(2)
+        i = (i + 1) % len(devices)
 
 
 def prepare_device(device, start_delay):
@@ -387,8 +392,7 @@ def prepare_device(device, start_delay):
 
     print(f"prepare device {name}")
     device = device_fun(mac, name, handle_single_value, handle_bulk_values)
-    t1 = threading.Timer(start_delay, connect_disconnect_loop, args=(device,))
-    t1.start()
+    return device
 
 
 # F9:8E:1C:EC:9C:72 SmartSolar HQ2027LDKCU
@@ -414,8 +418,13 @@ if __name__ == "__main__":
     print(f"starting with devices: {args.device}")
     if args.device:  # 0 equals false :(
         prepare_device(DEVICES[args.device - 1], 0)
+        t1 = threading.Timer(0, connect_disconnect_loop, args=(device,)).start
     else:
+        devices = []
         for i, device in enumerate(DEVICES):
-            prepare_device(device, i * 10)
+            devices.append(prepare_device(device, i * 10))
+        t1 = threading.Timer(0, connect_disconnect_loop, args=(devices,))
+    t1.start()
+
     print("manager event loop startinf")
     victron_gatt.manager.run()
