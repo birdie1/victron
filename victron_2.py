@@ -335,7 +335,12 @@ device = None
 
 def connect_loop(device):
     print(f"{device.name} connect")
-    device.connect()
+    try:
+        device.connect()
+    except:
+        next_time = datetime.now() + timedelta(seconds=connect_retry_timer)
+        logger(f"{device.name} BT error connecting retry at {next_time:%H:%M:%S}")
+        return (connect_retry_timer, connect_loop)
     # maybe important. sleep(0) yields to other threads - give eventloop a chance to work
     time.sleep(0)
     print(f"{device.name} connected:{device.connected}")
