@@ -341,7 +341,7 @@ def connect_loop(device):
     except:
         next_time = datetime.now() + timedelta(seconds=connect_retry_timer)
         logger(f"{device.name} BT error connecting retry at {next_time:%H:%M:%S}")
-        return (connect_retry_timer, connect_loop)
+        return False  # return (connect_retry_timer, connect_loop)
     # maybe important. sleep(0) yields to other threads - give eventloop a chance to work
     time.sleep(0)
     print(f"{device.name} connected:{device.connected}")
@@ -353,15 +353,15 @@ def connect_loop(device):
         time.sleep(2)
         print(f"{device.name} send init sequence")
         device.start_send_init_squence()
-        time.sleep(20)
-        return (disconnect_timer, disconnect_loop)
+        # time.sleep(20)
+        return True  # return (disconnect_timer, disconnect_loop)
     else:
         next_time = datetime.now() + timedelta(seconds=connect_retry_timer)
         print(
             f"{device.name} error connecting to device {device.mac_address}, retry at {next_time:%H:%M:%S}"
         )
         logger(f"{device.name} BT error connecting retry at {next_time:%H:%M:%S}")
-        return (connect_retry_timer, connect_loop)
+        return False  # return (connect_retry_timer, connect_loop)
 
 
 def disconnect_loop(device):
@@ -378,8 +378,10 @@ def connect_disconnect_loop(devices):
     next_state = (0, connect_loop)
     i = 0
     while True:
-        connect_loop(devices[i])
-        sleep(disconnect_timer)
+        if connect_loop(devices[i]):
+            print(f"{devices[i].name}:wait {disconnect_timer}")
+            sleep(30)
+
         disconnect_loop(devices[i])
         sleep(2)
         i = (i + 1) % len(devices)
