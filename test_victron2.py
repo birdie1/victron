@@ -1,9 +1,7 @@
-from victron_gatt import AnyDevice
-from victron_smartshunt import get_device_instance
-from victron_smartshunt import handle_uuid_map
-
 from _pytest import fixtures
 import pytest
+import types
+import gatt
 from pytest_mock import mocker
 from victron_2 import (
     VARLEN_CATEGORY_LOOKUP,
@@ -15,8 +13,10 @@ from victron_2 import (
     VALUE_TYPES,
 )
 import victron_2
-import types
-import gatt
+from victron_gatt import AnyDevice
+import victron_smartshunt
+import victron_orion
+
 
 manager = gatt.DeviceManager(adapter_name="hci0")
 
@@ -43,9 +43,13 @@ def test_updated():
     fixtures = [
         ("0027", "080319ed8f42f8ff080319ed8c444efcffff0803"),
     ]
-    device = get_device_instance("", "test", handle_single_value, handle_bulk_values)
+    device = victron_smartshunt.get_device_instance(
+        "", "test", handle_single_value, handle_bulk_values
+    )
     for handle, data in fixtures:
-        dummy_characteristic = types.SimpleNamespace(uuid=handle_uuid_map[handle])
+        dummy_characteristic = types.SimpleNamespace(
+            uuid=victron_smartshunt.handle_uuid_map[handle]
+        )
         device.characteristic_value_updated(dummy_characteristic, bytes.fromhex(data))
 
 
@@ -63,14 +67,15 @@ def test_start_of_packet():  # 1 2 3 4 5 6 7 8 9 1011121314
 
 def test_real_errors():
     fixtures = [
-        (
-            "0027",
-            b"\xc5\x82\x99V\xa0\x00T\x01\x00\x00\xd1\xff\xff\xff\xff\x08\x03\x19\x03\x08",
-        ),
+        ("0027", b"\xc5\x82\x99V\xa0\x00T\x01\x00\x00\xd1\xff\xff\xff\xff\x08\x03\x19\x03\x08"),
     ]
-    device = get_device_instance("", "test", handle_single_value, handle_bulk_values)
+    device = victron_smartshunt.get_device_instance(
+        "", "test", handle_single_value, handle_bulk_values
+    )
     for handle, data in fixtures:
-        dummy_characteristic = types.SimpleNamespace(uuid=handle_uuid_map[handle])
+        dummy_characteristic = types.SimpleNamespace(
+            uuid=victron_smartshunt.handle_uuid_map[handle]
+        )
         device.characteristic_value_updated(dummy_characteristic, data)
 
 
@@ -99,11 +104,45 @@ def test_battery_capacity(mocker):
         nonlocal logged_result
         logged_result = text
 
-    device = get_device_instance("", "test", handle_single_value, handle_bulk_values)
+    device = victron_smartshunt.get_device_instance(
+        "", "test", handle_single_value, handle_bulk_values
+    )
     for handle, data in fixtures:
-        dummy_characteristic = types.SimpleNamespace(uuid=handle_uuid_map[handle])
+        dummy_characteristic = types.SimpleNamespace(
+            uuid=victron_smartshunt.handle_uuid_map[handle]
+        )
         mocker.patch("victron_2.logger", mocked_logger)
+        import ipdb
 
+        ipdb.set_trace()
+        device.characteristic_value_updated(dummy_characteristic, data)
+        assert logged_result == "Battery Charge Status: 100.0%"
+
+
+def test_orion(mocker):
+    logged_result = ""
+
+    def mocked_logger(text):
+        nonlocal logged_result
+        logged_result = text
+
+    fixtures = [
+        ("001e", b"\x08\x00\x19\x01 D\x12\x07\x00\x00"),
+        ("001e", b"\x08\x00\x19\xed\xbbB\xc5\x04"),
+        ("001e", b"\x08\x00\x19\xed\xdbBT\x01"),
+        ("001e", b"\x08\x00\x19\x01 D\x13\x07\x00\x00"),
+        ("001e", b"\x08\x00\x19\xed\xdbB^\x01"),
+        ("001e", b"\x08\x00\x19\x01 D\x14\x07\x00\x00"),
+        ("001e", b"\x08\x00\x19\xed\xbbB\xc6\x04"),
+    ]
+
+    device = victron_orion.get_device_instance("", "test", handle_single_value, handle_bulk_values)
+    for handle, data in fixtures:
+        dummy_characteristic = types.SimpleNamespace(uuid=victron_orion.handle_uuid_map[handle])
+        mocker.patch("victron_2.logger", mocked_logger)
+        import ipdb
+
+        ipdb.set_trace()
         device.characteristic_value_updated(dummy_characteristic, data)
         assert logged_result == "Battery Charge Status: 100.0%"
 
@@ -112,7 +151,11 @@ def test_bulk_stuff():
     fixtures = [
         ("0027", "080319ed8f42f8ff080319ed8c444efcffff0803"),
     ]
-    device = get_device_instance("", "test", handle_single_value, handle_bulk_values)
+    device = victron_smartshunt.get_device_instance(
+        "", "test", handle_single_value, handle_bulk_values
+    )
     for handle, data in fixtures:
-        dummy_characteristic = types.SimpleNamespace(uuid=handle_uuid_map[handle])
+        dummy_characteristic = types.SimpleNamespace(
+            uuid=victron_smartshunt.handle_uuid_map[handle]
+        )
         device.characteristic_value_updated(dummy_characteristic, bytes.fromhex(data))

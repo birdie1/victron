@@ -78,14 +78,9 @@ class AnyDevice(gatt.Device):
                 char_name = well_known_uuids[service.uuid]
             else:
                 char_name = "unknown endpoint"
-            print(
-                "[%s]  Service [%s] (%s)" % (self.mac_address, service.uuid, char_name)
-            )
+            print("[%s]  Service [%s] (%s)" % (self.mac_address, service.uuid, char_name))
             for characteristic in service.characteristics:
-                print(
-                    "[%s]    Characteristic [%s]"
-                    % (self.mac_address, characteristic.uuid)
-                )
+                print("[%s]    Characteristic [%s]" % (self.mac_address, characteristic.uuid))
                 self.characteristics[characteristic.uuid] = characteristic
 
     def characteristic_enable_notification_succeeded(self, characteristic, value):
@@ -122,9 +117,7 @@ class AnyDevice(gatt.Device):
     def subscribe_notifications(self):
         print(f"{self.name}:subscribe notifications")
         if not self.characteristics:
-            print(
-                f"{self.name}:characteristics empty, sleep & retry - CHECK DEVICE PAIRING!"
-            )
+            print(f"{self.name}:characteristics empty, sleep & retry - CHECK DEVICE PAIRING!")
             time.sleep(2)
         for key, uuid in self.handle_uuid_map.items():
             print(f"{self.name}: notifications for {key}: {uuid}")
@@ -147,9 +140,7 @@ class AnyDevice(gatt.Device):
         time.sleep(1)
 
     def characteristics_missing(self):
-        print(
-            f"{self.name}: connected but characteristics not yet enumerated, sleep an retry"
-        )
+        print(f"{self.name}: connected but characteristics not yet enumerated, sleep an retry")
         print(f"{self.name}: CHECK DEVICE PAIRING!")
         time.sleep(2)
         self.start_send_init_squence()

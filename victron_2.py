@@ -55,12 +55,11 @@ TYPE_NAMES = {
 }
 
 FIXED_DATA_NAMES = {
-    0x7D: ("Starter", 100, "V"),
-    0x8C: ("Current", 1000, "A"),
-    0x8D: ("Voltage", 100, "V"),
-    0x8E: ("Power", 1, "W"),
-    0x8F: ("Capacity", 100, "%"),
-    # 0xFE: ("UNKNOWN",1,'A'),
+    0x7D: ("FIXED Starter", 100, "V"),
+    0x8C: ("FIXED Current", 1000, "A"),
+    0x8D: ("FIXED Voltage", 100, "V"),
+    0x8E: ("FIXED Power", 1, "W"),
+    0x8F: ("FIXED Capacity", 100, "%"),
 }
 
 
@@ -103,7 +102,7 @@ VALUE_VALUE_NAMES = {
     0x8E: ("Power", "W", 1.0, True),
     0x7D: ("Starter", "V", 100, True),
     0x8F: ("SmartSolar Battery Current", "A", 10, True),
-    0xBC: ("SmartSolar Power", "P", 100, True),
+    0xBC: ("SmartSolar Power", "W", 100, True),
     0xBD: ("SmartSolar Solar Current", "A", 10, True),
     0xBB: ("SmartSolar Solar Voltage", "V", 100, True),
     0xEF: ("SmartSolar Setting Battery Voltage", "V", 1, True),
@@ -253,9 +252,7 @@ Header = namedtuple("Header", ["value_type", "category_type", "length"])
 
 
 def decode_header(header_4b):
-    return Header(
-        VALUE_TYPES(header_4b[0]), int.from_bytes(bytes(header_4b[:4]), "little"), 4
-    )
+    return Header(VALUE_TYPES(header_4b[0]), int.from_bytes(bytes(header_4b[:4]), "little"), 4)
 
 
 def handle_bulk_values(value, device_name):
