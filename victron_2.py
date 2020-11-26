@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+import traceback
 import os
 import re
 import subprocess
@@ -365,12 +366,16 @@ def connect_disconnect_loop(devices):
     next_state = (0, connect_loop)
     i = 0
     while True:
-        if connect_loop(devices[i]):
-            next_time = datetime.now() + timedelta(seconds=disconnect_timer)
-            logger(f"{devices[i].name}: BT connected until {next_time:%H:%M:%S}")
-            sleep(disconnect_timer)
+        try:
+            if connect_loop(devices[i]):
+                next_time = datetime.now() + timedelta(seconds=disconnect_timer)
+                logger(f"{devices[i].name}: BT connected until {next_time:%H:%M:%S}")
+                sleep(disconnect_timer)
 
-        disconnect_loop(devices[i])
+            disconnect_loop(devices[i])
+        except:
+            # catch all to keep thread going
+            traceback.print_stack()
         sleep(2)
         i = (i + 1) % len(devices)
 
