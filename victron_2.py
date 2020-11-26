@@ -219,13 +219,12 @@ def decode_var_len(value, config_table):
     data = value[DATA_POS : DATA_POS + length]
 
     command = value[COMMAND_POS]
+    if command not in config_table:
+        raise KeyError(f"unknown command 0x{command:x}")
 
     data_label = get_label(command, config_table)
-    if command in config_table:
-        config = config_table[command]
-        data_string = format_value(data, config)
-    else:
-        data_string = hex(int.from_bytes(value, "little"))
+    config = config_table[command]
+    data_string = format_value(data, config)
 
     consumed = 2 + length
     return f"{data_label}: {data_string}", consumed

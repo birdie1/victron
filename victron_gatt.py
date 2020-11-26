@@ -108,8 +108,8 @@ class AnyDevice(gatt.Device):
                 print(
                     f"{self.name}: unhandled characteristic updated: [{characteristic.uuid}]\tvalue:{value}"
                 )
-        except:
-            print(f"{self.name}: error handling: {value}")
+        except Exception as e:
+            print(f"{self.name}: error handling: {value}: {e}")
 
     init_sequence = None
     characteristics = {}
