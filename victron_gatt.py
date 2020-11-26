@@ -110,6 +110,7 @@ class AnyDevice(gatt.Device):
                 )
         except Exception as e:
             print(f"{self.name}: error handling: {value}: {e}")
+        time.sleep(0)
 
     init_sequence = None
     characteristics = {}
