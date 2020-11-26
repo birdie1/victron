@@ -380,14 +380,14 @@ def connect_disconnect_loop(device):
         next_state = next_state[1](device)
 
 
-def prepare_device(device):
+def prepare_device(device, start_delay):
     device_fun = device[0]
     mac = device[1]
     name = device[2]
 
     print(f"prepare device {name}")
     device = device_fun(mac, name, handle_single_value, handle_bulk_values)
-    t1 = threading.Thread(target=connect_disconnect_loop, args=(device,), daemon=False)
+    t1 = threading.Timer(start_delay, target=connect_disconnect_loop, args=(device,), daemon=False)
     t1.start()
 
 
@@ -415,7 +415,7 @@ if __name__ == "__main__":
     if args.device:
         prepare_device(DEVICES[args.device])
     else:
-        for device in DEVICES:
-            prepare_device(device)
+        for i, device in DEVICES:
+            prepare_device(device, i * 10)
     print("manager event loop startinf")
     victron_gatt.manager.run()
