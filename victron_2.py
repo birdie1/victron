@@ -401,7 +401,7 @@ if __name__ == "__main__":
         "--device",
         metavar="NUM",
         type=int,
-        help="0: smartshunt, 1: smartsolar, 2:orion",
+        help="1: smartshunt, 2: smartsolar, 3:orion",
         required=False,
     )
     args = parser.parse_args()
@@ -411,9 +411,9 @@ if __name__ == "__main__":
         (victron_smartsolar.get_device_instance, "F9:8E:1C:EC:9C:72", "SmartSolar"),
         (victron_orion.get_device_instance, "E7:79:E6:1D:EF:04", "Orion"),
     ]
-
-    if args.device:
-        prepare_device(DEVICES[args.device])
+    print(f"starting with devices: {args.device}")
+    if args.device:  # 0 equals false :(
+        prepare_device(DEVICES[args.device - 1], 0)
     else:
         for i, device in enumerate(DEVICES):
             prepare_device(device, i * 10)
