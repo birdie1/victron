@@ -321,6 +321,7 @@ device = None
 def connect_loop(device):
     print(f"{device.name} connect")
     device.connect()
+    # maybe important. sleep(0) yields to other threads - give eventloop a chance to work
     time.sleep(0)
     print(f"{device.name} connected:{device.connected}")
     if device.connected:
@@ -344,7 +345,7 @@ def connect_loop(device):
 
 
 def disconnect_loop(device):
-    print(f"{device.name} disconnect")
+    print(f"{device.name} planned disconnect")
     device.disconnect()
     next_time = datetime.now() + timedelta(seconds=connect_timer)
     logger(f"{device.name} BT disconnected, connecting again at {next_time:%H:%M:%S}")
@@ -397,8 +398,3 @@ if __name__ == "__main__":
     else:
         for device in DEVICES:
             prepare_device(device)
-    # print("manager run")
-    # manager.run()
-    # while True:
-    #     time.sleep(20)
-    #     send_ping()

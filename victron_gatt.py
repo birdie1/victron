@@ -33,6 +33,10 @@ well_known_uuids = {
 
 
 class AnyDevice(gatt.Device):
+    """
+    implements event handlers for dbus bt gatt devices
+    """
+
     def __init__(
         self,
         mac_address,
@@ -53,22 +57,22 @@ class AnyDevice(gatt.Device):
 
     def connect_succeeded(self):
         super().connect_succeeded()
-        print("[%s] Connected" % (self.mac_address))
+        print(f"{self.name}: [{self.mac_address}] Connected")
         self.connected = True
 
     def connect_failed(self, error):
         super().connect_failed(error)
-        print("[%s] Connection failed: %s" % (self.mac_address, str(error)))
+        print(f"{self.name}: [{self.mac_address}] Connection failed: {str(error)}")
         self.connected = False
 
     def disconnect_succeeded(self):
         super().disconnect_succeeded()
-        print("[%s] Disconnected" % (self.mac_address))
+        print(f"{self.name}: [{self.mac_address}] Disconnected")
 
     def services_resolved(self):
         super().services_resolved()
         self.connected = True
-        print("[%s] Resolved services" % (self.mac_address))
+        print(f"{self.name}: [{self.mac_address}] Resolved services")
         for service in self.services:
             if service.uuid in well_known_uuids:
                 char_name = well_known_uuids[service.uuid]
@@ -85,13 +89,13 @@ class AnyDevice(gatt.Device):
                 self.characteristics[characteristic.uuid] = characteristic
 
     def characteristic_enable_notification_succeeded(self, characteristic, value):
-        print("enable notification succeded")
+        print(f"{self.name}: enable notification succeded")
 
     def characteristic_enable_notification_failed(self, characteristic, value):
-        print("enable notification failed")
+        print(f"{self.name}: enable notification failed")
 
     def characteristic_write_value_succeeded(self, characteristic):
-        print("write succeeded")
+        print(f"{self.name}: write succeeded")
         try:
             self.send_init_sequence()
         except StopIteration:
@@ -102,51 +106,31 @@ class AnyDevice(gatt.Device):
 
     def characteristic_value_updated(self, characteristic, value):
         try:
-            if characteristic.uuid == "0000180a-0000-1000-8000-00805f9b34fb":
-                print("Firmware version:", value.decode("utf-8"))
-
             if characteristic.uuid in self.notification_table.keys():
                 handler_fun = self.notification_table[characteristic.uuid]
                 handler_fun(value, self.name)
             else:
                 print(
-                    f"unhandled characteristic updated: [{characteristic.uuid}]\tvalue:{value}"
+                    f"{self.name}: unhandled characteristic updated: [{characteristic.uuid}]\tvalue:{value}"
                 )
         except:
-            print(f"error handling: {value}")
-
-    def request_firmware_Version(self):
-        try:
-            device_information_service = next(
-                s
-                for s in self.services
-                if s.uuid == "0000180a-0000-1000-8000-00805f9b34fb"
-            )
-        except StopIteration:
-            print("no firmware characteristic avlbl")
-            return
-
-        firmware_version_characteristic = next(
-            c
-            for c in device_information_service.characteristics
-            if c.uuid == "00002a26-0000-1000-8000-00805f9b34fb"
-        )
-
-        firmware_version_characteristic.read_value()
+            print(f"{self.name}: error handling: {value}")
 
     init_sequence = None
     characteristics = {}
 
     def subscribe_notifications(self):
-        print("subscribe notifications")
+        print(f"{self.name}:subscribe notifications")
         if not self.characteristics:
-            print("characteristics empty, sleep")
+            print(
+                f"{self.name}:characteristics empty, sleep & retry - CHECK DEVICE PAIRING!"
+            )
             time.sleep(2)
         for key, uuid in self.handle_uuid_map.items():
-            print(f"notificaions for {key}: {uuid}")
+            print(f"{self.name}: notifications for {key}: {uuid}")
             c = self.characteristics[uuid]
             c.enable_notifications()
-        print("enable notifications done")
+        print(f"{self.name}: enable notifications done")
 
     def start_send_init_squence(self):
         global init_sequence
@@ -158,24 +142,27 @@ class AnyDevice(gatt.Device):
         if not self.characteristics:
             self.characteristics_missing()
         c = self.characteristics[uuid]
-        print(f"sending {handle}, data{data}")
+        print(f"{self.name}: sending {handle}, data{data}")
         c.write_value(data)
         time.sleep(1)
 
     def characteristics_missing(self):
-        print(f"connected but characteristics not yet enumerated, sleep an retry")
+        print(
+            f"{self.name}: connected but characteristics not yet enumerated, sleep an retry"
+        )
+        print(f"{self.name}: CHECK DEVICE PAIRING!")
         time.sleep(2)
         self.start_send_init_squence()
 
     def send_ping(self):
-        print("send ping")
+        print(f"{self.name}: send ping")
         for packet in self.ping:
             c = self.characteristics[self.handle_uuid_map[packet[0]]]
             hs = packet[1]
             b = bytearray.fromhex(hs)
-            print(f"sending {packet[0]}, data{b}")
+            print(f"{self.name}: sending {packet[0]}, data{b}")
             c.write_value(b)
-        print("send ping done")
+        print(f"{self.name}: send ping done")
 
 
 def gatt_device_instance(
@@ -195,10 +182,8 @@ def gatt_device_instance(
 # init event loop
 manager = gatt.DeviceManager(adapter_name="hci0")
 
-print("start")
-
-print("manager thread")
+print("manager thread starting")
 t1 = threading.Thread(target=lambda: manager.run())
 t1.daemon = True
 t1.start()
-print("manager running")
+print("manager thread running")
