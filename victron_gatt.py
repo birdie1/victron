@@ -129,9 +129,12 @@ class AnyDevice(gatt.Device):
             print(f"{self.name}:characteristics empty, sleep & retry - CHECK DEVICE PAIRING!")
             time.sleep(2)
         for key, uuid in self.handle_uuid_map.items():
-            print(f"{self.name}: notifications for {key}: {uuid}")
-            c = self.characteristics[uuid]
-            c.enable_notifications()
+            try:
+                print(f"{self.name}: notifications for {key}: {uuid}")
+                c = self.characteristics[uuid]
+                c.enable_notifications()
+            except:
+                print(f"{self.name}: error subscribe notificatoion {uuid}")
         print(f"{self.name}: enable notifications done")
         time.sleep(0)
 

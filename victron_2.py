@@ -329,7 +329,7 @@ def handle_single_value(value, device_name):
 
 
 connect_timer = 30  # during dev. for prod: 5 * 60
-disconnect_timer = 60
+disconnect_timer = 30
 connect_retry_timer = 30
 device = None
 
@@ -339,48 +339,36 @@ def connect_loop(device):
     try:
         device.connect()
     except:
-        next_time = datetime.now() + timedelta(seconds=connect_retry_timer)
-        logger(f"{device.name} BT error connecting retry at {next_time:%H:%M:%S}")
-        return False  # return (connect_retry_timer, connect_loop)
+        print(f"{device.name} failed to connect. skipping")
+        return False
     # maybe important. sleep(0) yields to other threads - give eventloop a chance to work
     time.sleep(0)
     print(f"{device.name} connected:{device.connected}")
     if device.connected:
-        next_time = datetime.now() + timedelta(seconds=disconnect_timer)
-        logger(f"{device.name} BT connected until {next_time:%H:%M:%S}")
-
         device.subscribe_notifications()
         time.sleep(2)
         print(f"{device.name} send init sequence")
         device.start_send_init_squence()
-        # time.sleep(20)
-        return True  # return (disconnect_timer, disconnect_loop)
+        return True
     else:
-        next_time = datetime.now() + timedelta(seconds=connect_retry_timer)
-        print(
-            f"{device.name} error connecting to device {device.mac_address}, retry at {next_time:%H:%M:%S}"
-        )
-        logger(f"{device.name} BT error connecting retry at {next_time:%H:%M:%S}")
-        return False  # return (connect_retry_timer, connect_loop)
+        print(f"{device.name} failed to connect. skipping")
+        return False
 
 
 def disconnect_loop(device):
     print(f"{device.name} planned disconnect")
     device.disconnect()
-    next_time = datetime.now() + timedelta(seconds=connect_timer)
-    logger(f"{device.name} BT disconnected, connecting again at {next_time:%H:%M:%S}")
-    print(f"{device.name} connecting in {connect_timer}")
     return (connect_timer, connect_loop)
 
 
 def connect_disconnect_loop(devices):
-    # print(f"{device.name} start timer loop")
     next_state = (0, connect_loop)
     i = 0
     while True:
         if connect_loop(devices[i]):
-            print(f"{devices[i].name}:wait {disconnect_timer}")
-            sleep(30)
+            next_time = datetime.now() + timedelta(seconds=disconnect_timer)
+            logger(f"{devices[i].name} BT connected until {next_time:%H:%M:%S}")
+            sleep(disconnect_timer)
 
         disconnect_loop(devices[i])
         sleep(2)
