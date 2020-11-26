@@ -171,11 +171,11 @@ def gatt_device_instance(
     )
 
 
-# init event loop
 manager = gatt.DeviceManager(adapter_name="hci0")
-
-print("manager thread starting")
-t1 = threading.Thread(target=lambda: manager.run())
-t1.daemon = True
-t1.start()
-print("manager thread running")
+# init event loop
+def start_event_loop_in_thread():
+    print("manager thread starting")
+    t1 = threading.Thread(target=lambda: manager.run())
+    t1.daemon = True
+    t1.start()
+    print("manager thread running")

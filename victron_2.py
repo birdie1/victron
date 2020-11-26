@@ -12,6 +12,7 @@ from enum import IntEnum
 
 import ipdb
 
+import victron_gatt
 import victron_orion
 import victron_smartshunt
 import victron_smartsolar
@@ -411,3 +412,5 @@ if __name__ == "__main__":
     else:
         for device in DEVICES:
             prepare_device(device)
+    print("manager event loop startinf")
+    victron_gatt.manager.run()
