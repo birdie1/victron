@@ -107,7 +107,7 @@ class AnyDevice(gatt.Device):
 
             if characteristic.uuid in self.notification_table.keys():
                 handler_fun = self.notification_table[characteristic.uuid]
-                handler_fun(value)
+                handler_fun(value, self.name)
             else:
                 print(
                     f"unhandled characteristic updated: [{characteristic.uuid}]\tvalue:{value}"

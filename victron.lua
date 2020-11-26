@@ -12,6 +12,7 @@ fields.remaining   = ProtoField.uint8("victron.remaining", "Remainig pkts", base
 fields.protocol_type   = ProtoField.uint8("victron.protocol_type", "prot type", base.HEX)
 fields.command_category = ProtoField.uint32("victron.cmd_category", "command category", base.HEX, command_categories)
 fields.start_sequence   = ProtoField.uint32("victron.start_sequence", "start_squence", base.HEX)
+fields.unknown_command  = ProtoField.uint8("victron.command", "unknown command", base.HEX)
 
 local data_types = {
 	[0x08] = "value (has length)",
@@ -71,6 +72,9 @@ local command_categories = {
 	[0x0f190308] = "mixed settings",
 	[0xed190008] = "Orion Values",
 	[0xee190008] = "Orion Settings",
+	[0xec190008] = "streaming smartshunt",
+	[0x05038119] = "streaming2",
+	[0x19819395] = "streaming3",
 }
 
 local mixedsetting_types={
@@ -267,8 +271,8 @@ function add_unknown_field(buffer,pinfo,subtree)
 	if data_size_nibble == 4 then
 		unknown_field = fields.unknown32
 	end
-
-		subtree:add_le(unknown_field, buffer(0,data_size_nibble))
+		subtree:add_le(fields.unknown_command, buffer(0,1))
+		subtree:add_le(unknown_field, buffer(2,data_size_nibble))
 		return data_size_nibble
 end
 
@@ -295,6 +299,16 @@ function command_category(buffer, pinfo, subtree, data_size, command_types)
 	return data_size
 end
 
+local category_funs = {
+[0x10190308] = {settings_commands,fields.settings_value},
+[0xed190308] = {value_commands,fields.value},
+[0x03190308] = {hist_commands, fields.history},
+[0x0f190308] = {mixedsetting_commands, fields.mixedsettings},
+[0xed190008] = {orion_commands, fields.orion},
+[0xee190008] = {orionsettings_commands, fields.orion_settings},
+[0x05038119] = {value_commands,fields.value},
+[0x19810305] = {value_commands,fields.value},
+}
 
 function single_value(buffer,pinfo,subtree)	
 	if buffer:len() <6 then
@@ -313,48 +327,24 @@ function single_value(buffer,pinfo,subtree)
 	subtree:add_le(fields.data_size , buffer(5,1), data_size_nibble)
 	local consumed = 6
 
-	print("buffer:"..buffer(0,4):le_uint())
-	if buffer(0,4):le_uint() == 0x10190308 then
-		subtree:add_le(fields.settings_value, buffer(4,1))
-		return consumed + command_category(buffer(4), pinfo, subtree, data_size_nibble, settings_commands)
+	local header = buffer(0,4):le_uint()
+	print("header:"..header)
+	category_fun = category_funs[header]
+
+	if category_fun  then
+		subtree:add_le(category_fun[2], buffer(4,1))
+		return consumed + command_category(buffer(4), pinfo, subtree, data_size_nibble, category_fun[1])
 	end
 
 	if buffer(0,4):le_uint() == 0x10190309 then
 		subtree:add_le(fields.settings_value, buffer(4,1))
 		return consumed + settings_bool(buffer(4), pinfo, subtree)
-	end
+	end		
 
-	if buffer(0,4):le_uint() == 0xed190308 then
-		subtree:add_le(fields.value, buffer(4,1))
-		return consumed + command_category(buffer(4), pinfo, subtree, data_size_nibble, value_commands)
-	end
-	
-
-	if buffer(0,4):le_uint() == 0x03190308 then
-		subtree:add_le(fields.history, buffer(4,1))
-		return consumed + command_category(buffer(4), pinfo, subtree, data_size_nibble, hist_commands)
-	end
-	
-	if buffer(0,4):le_uint() == 0x0f190308 then
-		subtree:add_le(fields.mixedsettings, buffer(4,1))
-		return command_category(buffer(4),pinfo,subtree, data_size_nibble, mixedsetting_commands)
-	end
-	
-	if buffer(0,4):le_uint() == 0xed190008 then
-		subtree:add_le(fields.orion, buffer(4,1))
-		return command_category(buffer(4),pinfo,subtree, data_size_nibble, orion_commands)
-	end
-	
-		
-	if buffer(0,4):le_uint() == 0xee190008 then
-		subtree:add_le(fields.orion_settings, buffer(4,1))
-		return command_category(buffer(4),pinfo,subtree, data_size_nibble, orionsettings_commands)
-	end
-	
 	if  data_type== 0x09 then
 		return add_unknown_bool(buffer(4),pinfo,subtree)
 	else
-		return add_unknown_field(buffer(6),pinfo,subtree)
+		return add_unknown_field(buffer(4),pinfo,subtree)
 	end
 end
 
@@ -364,10 +354,10 @@ function bulkvalues(buffer,pinfo,tree)
 	local packet_type = buffer(1,2):le_uint()
 	local data_start =  buffer(3)
 	tvbs = {}
-
-	print("data_Types:"..buffer(0,4):le_uint())
-	if command_categories[buffer(0,1):le_uint()] == nil then
-		print("header unknwon, need more bytes")
+	print("bulk")
+	print("data_Types:"..buffer(0,4))
+	if command_categories[buffer(0,4):le_uint()] == nil then
+		print("header unknwon, need more bytes:")
 		pinfo.desegment_offset = 5
 		pinfo.desegment_len = DESEGMENT_ONE_MORE_SEGMENT
 		return 0

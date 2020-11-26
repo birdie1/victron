@@ -106,3 +106,13 @@ def test_battery_capacity(mocker):
 
         device.characteristic_value_updated(dummy_characteristic, data)
         assert logged_result == "Battery Charge Status: 100.0%"
+
+
+def test_bulk_stuff():
+    fixtures = [
+        ("0027", "080319ed8f42f8ff080319ed8c444efcffff0803"),
+    ]
+    device = get_device_instance("", "test", handle_single_value, handle_bulk_values)
+    for handle, data in fixtures:
+        dummy_characteristic = types.SimpleNamespace(uuid=handle_uuid_map[handle])
+        device.characteristic_value_updated(dummy_characteristic, bytes.fromhex(data))

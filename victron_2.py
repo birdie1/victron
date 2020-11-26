@@ -258,35 +258,35 @@ def decode_header(header_4b):
     )
 
 
-def handle_bulk_values(value):
+def handle_bulk_values(value, device_name):
     global buffer
     buffer.extend(value)
 
     pos = start_of_packet(buffer)
     while len(buffer) > 0 and pos >= 0:
-        consumed = handle_one_value(buffer[pos:])
+        consumed = handle_one_value(buffer[pos:], device_name)
         buffer = buffer[pos + consumed :]
         pos = start_of_packet(buffer)
         if pos > 0:  # TODO BUG: midnight hacking
             unknown = buffer[:pos]
-            print(f"unknown value in bulk: {unknown}")
+            print(f"{device_name}: unknown value in bulk: {unknown}")
         if consumed == -1:
-            print("bulk: need more bytes")
+            print("{device_name}: bulk: need more bytes")
             return
 
 
-def handle_single_value(value):
+def handle_single_value(value, device_name):
 
     pos = start_of_packet(value)
     while pos >= 0:
-        consumed = handle_one_value(value[pos:])
+        consumed = handle_one_value(value[pos:], device_name)
         value = value[pos + consumed :]
         pos = start_of_packet(value)
     if len(value) > 0:
-        print(f"unknown single packet: {value}")
+        print(f"{device_name}: unknown single packet: {value}")
 
 
-def handle_one_value(value):
+def handle_one_value(value, device_name):
     header = decode_header(value)
 
     if (
@@ -308,7 +308,7 @@ def handle_one_value(value):
         result, used = decode_var_len(value[consumed:], category[1])
 
     consumed += used
-    logger(result)
+    logger(f"{device_name}: {result}")
     return consumed
 
 
