@@ -59,15 +59,18 @@ class AnyDevice(gatt.Device):
         super().connect_succeeded()
         print(f"{self.name}: [{self.mac_address}] Connected")
         self.connected = True
+        time.sleep(0)
 
     def connect_failed(self, error):
         super().connect_failed(error)
         print(f"{self.name}: [{self.mac_address}] Connection failed: {str(error)}")
         self.connected = False
+        time.sleep(0)
 
     def disconnect_succeeded(self):
         super().disconnect_succeeded()
         print(f"{self.name}: [{self.mac_address}] Disconnected")
+        time.sleep(0)
 
     def services_resolved(self):
         super().services_resolved()
@@ -82,12 +85,15 @@ class AnyDevice(gatt.Device):
             for characteristic in service.characteristics:
                 print("[%s]    Characteristic [%s]" % (self.mac_address, characteristic.uuid))
                 self.characteristics[characteristic.uuid] = characteristic
+        time.sleep(0)
 
     def characteristic_enable_notification_succeeded(self, characteristic, value):
         print(f"{self.name}: enable notification succeded")
+        time.sleep(0)
 
     def characteristic_enable_notification_failed(self, characteristic, value):
         print(f"{self.name}: enable notification failed")
+        time.sleep(0)
 
     def characteristic_write_value_succeeded(self, characteristic):
         print(f"{self.name}: write succeeded")
@@ -95,9 +101,11 @@ class AnyDevice(gatt.Device):
             self.send_init_sequence()
         except StopIteration:
             pass
+        time.sleep(0)
 
     def characteristic_write_value_failed(self, characteristic, error):
         print(f"write failed on charactersitic {characteristic.uuid}:merror: {error}")
+        time.sleep(0)
 
     def characteristic_value_updated(self, characteristic, value):
         try:
@@ -125,6 +133,7 @@ class AnyDevice(gatt.Device):
             c = self.characteristics[uuid]
             c.enable_notifications()
         print(f"{self.name}: enable notifications done")
+        time.sleep(0)
 
     def start_send_init_squence(self):
         global init_sequence
