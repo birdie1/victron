@@ -4,6 +4,7 @@ import types
 import gatt
 from pytest_mock import mocker
 from victron_2 import (
+    SIGNATURE,
     VARLEN_CATEGORY_LOOKUP,
     decode_var_len,
     handle_bulk_values,
@@ -79,15 +80,36 @@ def test_real_errors():
         device.characteristic_value_updated(dummy_characteristic, data)
 
 
-def test_decode_header():
-    fixtures = [
-        (bytes.fromhex("0803190f"), VALUE_TYPES.VAR_LEN, 0x0F190308),
-        (bytes.fromhex("09031903"), VALUE_TYPES.FIXED_LEN, 0x03190309),
-        (bytes.fromhex("090319ed"), VALUE_TYPES.FIXED_LEN, 0xED190309),
-        (bytes.fromhex("0803190f"), VALUE_TYPES.VAR_LEN, 0x0F190308),
-        (bytes.fromhex("080019ed"), VALUE_TYPES.VAR_LEN, 0xED190008),
+HEADER_FIXTURES = [
+    (bytes.fromhex("0803190f"), VALUE_TYPES.VAR_LEN, 0x0F190308),
+    (bytes.fromhex("09031903"), VALUE_TYPES.FIXED_LEN, 0x03190309),
+    (bytes.fromhex("090319ed"), VALUE_TYPES.FIXED_LEN, 0xED190309),
+    (bytes.fromhex("0803190f"), VALUE_TYPES.VAR_LEN, 0x0F190308),
+    (bytes.fromhex("080019ed"), VALUE_TYPES.VAR_LEN, 0xED190008),
+    (bytes.fromhex("08001901"), VALUE_TYPES.VAR_LEN, 0x01190008),
+]
+
+
+def test_signatures():
+    for fixture in HEADER_FIXTURES:
+        result = start_of_packet(fixture[0])
+        assert result == 0
+
+
+def test_signatures_negative():
+    # moight need update if bulk headers are added
+    WRONG_SIGNATURES = [
+        bytes.fromhex("080018ed"),
+        bytes.fromhex("08041901"),
     ]
-    for param in fixtures:
+    for fixture in WRONG_SIGNATURES:
+        result = start_of_packet(fixture)
+        assert result == -1
+
+
+def test_decode_header():
+
+    for param in HEADER_FIXTURES:
         result = decode_header(param[0])
         assert result.value_type == param[1]
         assert result.category_type == param[2]
@@ -112,11 +134,8 @@ def test_battery_capacity(mocker):
             uuid=victron_smartshunt.handle_uuid_map[handle]
         )
         mocker.patch("victron_2.logger", mocked_logger)
-        import ipdb
-
-        ipdb.set_trace()
         device.characteristic_value_updated(dummy_characteristic, data)
-        assert logged_result == "Battery Charge Status: 100.0%"
+        assert logged_result == "test: Battery Charge Status: 100.0%"
 
 
 def test_orion(mocker):
@@ -126,7 +145,8 @@ def test_orion(mocker):
         nonlocal logged_result
         logged_result = text
 
-    fixtures = [
+    # not yet decoded, but header should be accepted
+    fixtures = [  #
         ("001e", b"\x08\x00\x19\x01 D\x12\x07\x00\x00"),
         ("001e", b"\x08\x00\x19\xed\xbbB\xc5\x04"),
         ("001e", b"\x08\x00\x19\xed\xdbBT\x01"),
@@ -140,11 +160,7 @@ def test_orion(mocker):
     for handle, data in fixtures:
         dummy_characteristic = types.SimpleNamespace(uuid=victron_orion.handle_uuid_map[handle])
         mocker.patch("victron_2.logger", mocked_logger)
-        import ipdb
-
-        ipdb.set_trace()
         device.characteristic_value_updated(dummy_characteristic, data)
-        assert logged_result == "Battery Charge Status: 100.0%"
 
 
 def test_bulk_stuff():

@@ -126,6 +126,7 @@ VARLEN_CATEGORY_LOOKUP = {
     0x10190308: ("settings valu", SETTINGS_VALUE_NAMES),
     0xED190308: ("values values", VALUE_VALUE_NAMES),
     0x0F190308: ("mixed settings", MIXED_SETTINGS_NAMES),
+    0x01190008: ("Orion Values UKNNOWN", ORION_VALUE_NAMES),
     0xED190008: ("Orion Values", ORION_VALUE_NAMES),
     0xEE190008: ("Orion Settings", ORION_SETTINGS_NAMES),
 }
@@ -149,7 +150,7 @@ def twos_comp(val, bits):
     return val  # return positive value as is
 
 
-def format_value(type_id, value, config):
+def format_value(value, config):
     converted = int.from_bytes(value, "little", signed=config[3])
     return str(converted / config[2]) + config[1]
 
@@ -177,9 +178,13 @@ def decode_var_len(value, config_table):
     command = value[COMMAND_POS]
 
     data_label = get_label(command, config_table)
-    # format_fun =   # format_lookup[data_type]
-    config = config_table[command]
-    data_string = format_value(command, data, config)
+
+    if command in config_table:
+        config = config_table[command]
+        data_string = format_value(data, config)
+    else:
+        data_string = hex(value)
+
     consumed = 2 + length
     return f"{data_label}: {data_string}", consumed
 
@@ -221,9 +226,7 @@ buffer = bytearray()
 def signature_complete(value, signature):
     try:
         for pos, sigs in signature:
-            for sig in sigs:
-                if value[pos] == sig:
-                    break  # go to outer loop, continue with next signature position
+            if not value[pos] in sigs:
                 return False
         return True
     except:
@@ -237,12 +240,11 @@ SIGNATURE = [
 
 
 def start_of_packet(value):
-
-    for offset, item in enumerate(value):
+    for offset, _ in enumerate(value):
         # slice from start of signature to end
-        result = signature_complete(value[offset - SIGNATURE[0][0] :], SIGNATURE)
+        result = signature_complete(value[offset:], SIGNATURE)
         if result == True:
-            return offset - SIGNATURE[0][0]
+            return offset
     return -1
 
 
