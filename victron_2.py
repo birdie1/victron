@@ -415,7 +415,7 @@ if __name__ == "__main__":
     if args.device:
         prepare_device(DEVICES[args.device])
     else:
-        for i, device in DEVICES:
+        for i, device in enumerate(DEVICES):
             prepare_device(device, i * 10)
     print("manager event loop startinf")
     victron_gatt.manager.run()
