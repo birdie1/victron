@@ -387,7 +387,7 @@ def prepare_device(device, start_delay):
 
     print(f"prepare device {name}")
     device = device_fun(mac, name, handle_single_value, handle_bulk_values)
-    t1 = threading.Timer(start_delay, target=connect_disconnect_loop, args=(device,), daemon=False)
+    t1 = threading.Timer(start_delay, connect_disconnect_loop, args=(device,))
     t1.start()
 
 
