@@ -1,15 +1,20 @@
 #!/usr/bin/env python
-import re
-import threading
 import argparse
 import os
+import re
+import subprocess
 import sys
+import threading
 import time
+from collections import namedtuple
 from datetime import datetime, timedelta
+from enum import IntEnum
+
 import ipdb
+
 import victron_orion
-import victron_smartsolar
 import victron_smartshunt
+import victron_smartsolar
 
 # victron on its protocol
 # https://community.victronenergy.com/questions/40048/victron-data-capture-via-bluetooth.html
@@ -37,9 +42,7 @@ import victron_smartshunt
 
 # original start of values sequence
 VALUE_PREFIX = bytes.fromhex("08031903")
-
-
-from enum import IntEnum
+Header = namedtuple("Header", ["value_type", "category_type", "length"])
 
 
 class VALUE_TYPES(IntEnum):
@@ -127,6 +130,7 @@ VARLEN_CATEGORY_LOOKUP = {
     0xED190308: ("values values", VALUE_VALUE_NAMES),
     0x0F190308: ("mixed settings", MIXED_SETTINGS_NAMES),
     0x01190008: ("Orion Values UKNNOWN", ORION_VALUE_NAMES),
+    0xEC190008: ("streaming smartshunt UNKKNOWN", VALUE_VALUE_NAMES),
     0xED190008: ("Orion Values", ORION_VALUE_NAMES),
     0xEE190008: ("Orion Settings", ORION_SETTINGS_NAMES),
 }
@@ -143,68 +147,17 @@ FIXEDLEN_CATEGORY_LOOKUP = {
 }
 
 
+SIGNATURE = [
+    (1, (0x03, 0x00)),
+    (2, (0x19,)),
+]
+
+
 def twos_comp(val, bits):
     """compute the 2's complement of int value val"""
     if (val & (1 << (bits - 1))) != 0:  # if sign bit is set e.g., 8bit: 128-255
         val = val - (1 << bits)  # compute negative value
     return val  # return positive value as is
-
-
-def format_value(value, config):
-    converted = int.from_bytes(value, "little", signed=config[3])
-    return str(converted / config[2]) + config[1]
-
-
-def get_label(command, command_names):
-    try:
-        return command_names[command][0]
-    except:
-        return f"unknown type (0x{command:0X})"
-
-
-def decode_var_len(value, config_table):
-    """function expects user data after 4-byte prefix
-    bytes consumed start from data tpye
-    """
-    COMMAND_POS = 0
-    LENGHT_TYPE_POS = 1
-    DATA_POS = 2
-
-    length_type_field = value[LENGHT_TYPE_POS]
-    length = length_type_field & 0x0F
-    type_id = (length_type_field & 0xF0) >> 4
-    data = value[DATA_POS : DATA_POS + length]
-
-    command = value[COMMAND_POS]
-
-    data_label = get_label(command, config_table)
-
-    if command in config_table:
-        config = config_table[command]
-        data_string = format_value(data, config)
-    else:
-        data_string = hex(value)
-
-    consumed = 2 + length
-    return f"{data_label}: {data_string}", consumed
-
-
-def decode_fixed_len(value):
-    """function expects whole packet with 4-byte prefix
-    but counts consumed bytes without prefix!!
-    """
-    DATATYPE_POS = 0
-    DATA_POS = 1
-
-    data = value[DATA_POS]
-    data_type = value[DATATYPE_POS]
-    data_label = get_label(data_type, MIXED_SETTINGS_NAMES)
-    data_string = format_value(data_type, data)
-    consumed = 2
-    return f"{data_label}: {data_string}", consumed
-
-
-import subprocess
 
 
 def logger(text):
@@ -220,7 +173,16 @@ def logger(text):
     )
 
 
-buffer = bytearray()
+def format_value(value, config):
+    converted = int.from_bytes(value, "little", signed=config[3])
+    return str(converted / config[2]) + config[1]
+
+
+def get_label(command, command_names):
+    try:
+        return command_names[command][0]
+    except:
+        return f"unknown type (0x{command:0X})"
 
 
 def signature_complete(value, signature):
@@ -233,12 +195,6 @@ def signature_complete(value, signature):
         return False
 
 
-SIGNATURE = [
-    (1, (0x03, 0x00)),
-    (2, (0x19,)),
-]
-
-
 def start_of_packet(value):
     for offset, _ in enumerate(value):
         # slice from start of signature to end
@@ -248,13 +204,99 @@ def start_of_packet(value):
     return -1
 
 
-from collections import namedtuple
-
-Header = namedtuple("Header", ["value_type", "category_type", "length"])
-
-
 def decode_header(header_4b):
     return Header(VALUE_TYPES(header_4b[0]), int.from_bytes(bytes(header_4b[:4]), "little"), 4)
+
+
+def decode_var_len(value, config_table):
+    COMMAND_POS = 0
+    LENGHT_TYPE_POS = 1
+    DATA_POS = 2
+
+    length_type_field = value[LENGHT_TYPE_POS]
+    length = length_type_field & 0x0F
+    type_id = (length_type_field & 0xF0) >> 4
+    data = value[DATA_POS : DATA_POS + length]
+
+    command = value[COMMAND_POS]
+
+    data_label = get_label(command, config_table)
+    if command in config_table:
+        config = config_table[command]
+        data_string = format_value(data, config)
+    else:
+        data_string = hex(int.from_bytes(value, "little"))
+
+    consumed = 2 + length
+    return f"{data_label}: {data_string}", consumed
+
+
+def handle_one_value(value, device_name):
+    header = decode_header(value)
+
+    if (
+        header.value_type == VALUE_TYPES.FIXED_LEN
+        and len(value) < 6
+        or header.value_type == VALUE_TYPES.VAR_LEN
+        and len(value) < 6
+    ):
+        return -1
+
+    result = ""
+    consumed = header.length
+    used = 0
+
+    if header.value_type == VALUE_TYPES.FIXED_LEN:
+        result, used = decode_fixed_len(value[consumed:], header)
+    if header.value_type == VALUE_TYPES.VAR_LEN:
+        category = VARLEN_CATEGORY_LOOKUP[header.category_type]
+        result, used = decode_var_len(value[consumed:], category[1])
+
+    consumed += used
+    logger(f"{device_name}: {result}")
+    return consumed
+
+
+def decode_fixed_len(value):
+    """function expects whole packet with 4-byte prefix"""
+    DATATYPE_POS = 0
+    DATA_POS = 1
+
+    data = value[DATA_POS]
+    data_type = value[DATATYPE_POS]
+    data_label = get_label(data_type, MIXED_SETTINGS_NAMES)
+    data_string = format_value(data_type, data)
+    consumed = 2
+    return f"{data_label}: {data_string}", consumed
+
+
+def handle_one_value(value, device_name):
+    header = decode_header(value)
+
+    if (
+        header.value_type == VALUE_TYPES.FIXED_LEN
+        and len(value) < 6
+        or header.value_type == VALUE_TYPES.VAR_LEN
+        and len(value) < 6
+    ):
+        return -1
+
+    result = ""
+    consumed = header.length
+    used = 0
+
+    if header.value_type == VALUE_TYPES.FIXED_LEN:
+        result, used = decode_fixed_len(value[consumed:], header)
+    if header.value_type == VALUE_TYPES.VAR_LEN:
+        category = VARLEN_CATEGORY_LOOKUP[header.category_type]
+        result, used = decode_var_len(value[consumed:], category[1])
+
+    consumed += used
+    logger(f"{device_name}: {result}")
+    return consumed
+
+
+buffer = bytearray()
 
 
 def handle_bulk_values(value, device_name):
@@ -283,32 +325,6 @@ def handle_single_value(value, device_name):
         pos = start_of_packet(value)
     if len(value) > 0:
         print(f"{device_name}: unknown single packet: {value}")
-
-
-def handle_one_value(value, device_name):
-    header = decode_header(value)
-
-    if (
-        header.value_type == VALUE_TYPES.FIXED_LEN
-        and len(value) < 6
-        or header.value_type == VALUE_TYPES.VAR_LEN
-        and len(value) < 6
-    ):
-        return -1
-
-    result = ""
-    consumed = header.length
-    used = 0
-
-    if header.value_type == VALUE_TYPES.FIXED_LEN:
-        result, used = decode_fixed_len(value[consumed:], header)
-    if header.value_type == VALUE_TYPES.VAR_LEN:
-        category = VARLEN_CATEGORY_LOOKUP[header.category_type]
-        result, used = decode_var_len(value[consumed:], category[1])
-
-    consumed += used
-    logger(f"{device_name}: {result}")
-    return consumed
 
 
 connect_timer = 30  # during dev. for prod: 5 * 60

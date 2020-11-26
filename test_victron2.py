@@ -163,6 +163,27 @@ def test_orion(mocker):
         device.characteristic_value_updated(dummy_characteristic, data)
 
 
+def test_smartshunt(mocker):
+    logged_result = ""
+
+    def mocked_logger(text):
+        nonlocal logged_result
+        logged_result = text
+
+    fixtures = [
+        ("0027", b"\x08\x00\x19\xec0A\x02"),
+    ]
+    device = victron_smartshunt.get_device_instance(
+        "", "test", handle_single_value, handle_bulk_values
+    )
+    for handle, data in fixtures:
+        dummy_characteristic = types.SimpleNamespace(
+            uuid=victron_smartshunt.handle_uuid_map[handle]
+        )
+        mocker.patch("victron_2.logger", mocked_logger)
+        device.characteristic_value_updated(dummy_characteristic, data)
+
+
 def test_bulk_stuff():
     fixtures = [
         ("0027", "080319ed8f42f8ff080319ed8c444efcffff0803"),
