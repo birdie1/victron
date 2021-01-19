@@ -336,8 +336,6 @@ def handle_single_value(value, device_name):
     if len(value) > 0:
         print(f"{device_name}: unknown single packet: {value}")
 
-device = None
-
 
 def connect_loop(device):
     logger.info(f"{device.name}: connecting...")
@@ -491,3 +489,6 @@ if __name__ == "__main__":
             t1 = threading.Timer(0, connect_disconnect_loop, args=(devices,))
 
     t1.start()
+
+    logger.info("Gatt manager event loop starting...")
+    victron_gatt.manager.run()
