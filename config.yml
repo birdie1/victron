@@ -1,0 +1,33 @@
+devices:
+    - name: Shunt1
+      type: smartshunt
+      protocol: bluetooth
+      mac: fd:d4:50:0f:6c:1b
+    - name: Solar1
+      type: smartsolar
+      protocol: bluetooth
+      mac: F9:8E:1C:EC:9C:72
+    - name: Orion1
+      type: orionsmart
+      protocol: bluetooth
+      mac: E7:79:E6:1D:EF:04
+    - name: Phoenix1
+      type: pheonix
+      protocol: serial
+      port: /dev/ttyUSB0
+
+timer:
+    connected: 30  # timer how long the device is connected
+    disconnected: 30 # timer at which time the device is connected again after disconnect # during dev. for prod: 2 * 60
+    retry: 10
+
+## Logging:
+## possible values:
+##    - syslog
+##    - mqtt
+logger: mqtt
+
+mqtt:
+  host: localhost
+  port: 1883
+  base_topic: victron

@@ -1,5 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import argparse
+import logging
 import traceback
 import os
 import re
@@ -7,6 +8,7 @@ import subprocess
 import sys
 import threading
 import time
+import yaml
 from collections import namedtuple
 from datetime import datetime, timedelta
 from enum import IntEnum
@@ -18,6 +20,25 @@ import victron_gatt
 import victron_orion
 import victron_smartshunt
 import victron_smartsolar
+
+
+with open("config.yml", 'r') as ymlfile:
+    config = yaml.full_load(ymlfile)
+
+
+logger_format = '[%(levelname)-7s] (%(asctime)s) %(filename)s::%(lineno)d %(message)s'
+logging.basicConfig(level=logging.DEBUG,
+                    format=logger_format,
+                    datefmt='%Y-%m-%d %H:%M:%S',
+                    filename=f"main.log")
+logger = logging.getLogger()
+
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.INFO)
+formatter = logging.Formatter(logger_format)
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
 
 # victron on its protocol
 # https://community.victronenergy.com/questions/40048/victron-data-capture-via-bluetooth.html
@@ -163,19 +184,6 @@ def twos_comp(val, bits):
     return val  # return positive value as is
 
 
-def logger(text):
-    print(text, file=sys.stderr)
-    subprocess.run(
-        [
-            "/usr/bin/logger",
-            f"--id={os.getpid()}",
-            "-t",
-            "victron",
-            text,
-        ]
-    )
-
-
 def format_value(value, config):
     converted = int.from_bytes(value, "little", signed=config[3])
     return str(converted / config[2]) + config[1]
@@ -255,7 +263,7 @@ def handle_one_value(value, device_name):
         result, used = decode_var_len(value[consumed:], category[1])
 
     consumed += used
-    logger(f"{device_name}: {result}")
+    output_mqtt(device_name, result)
     return consumed
 
 
@@ -294,7 +302,7 @@ def handle_one_value(value, device_name):
         result, used = decode_var_len(value[consumed:], category[1])
 
     consumed += used
-    logger(f"{device_name}: {result}")
+    output_mqtt(device_name, result)
     return consumed
 
 
@@ -328,23 +336,19 @@ def handle_single_value(value, device_name):
     if len(value) > 0:
         print(f"{device_name}: unknown single packet: {value}")
 
-
-connect_timer = 30  # during dev. for prod: 5 * 60
-disconnect_timer = 30
-connect_retry_timer = 30
 device = None
 
 
 def connect_loop(device):
-    print(f"{device.name} connect")
+    logger.info(f"{device.name}: connecting...")
     try:
         device.connect()
     except:
-        print(f"{device.name} failed to connect. skipping")
+        logger.error(f"{device.name}: failed to connect. Trying again shortly.")
         return False
     # maybe important. sleep(0) yields to other threads - give eventloop a chance to work
     time.sleep(0)
-    print(f"{device.name} connected:{device.connected}")
+    logger.info(f"{device.name}: connected: {device.connected}")
     if device.connected:
         device.subscribe_notifications()
         time.sleep(2)
@@ -352,14 +356,14 @@ def connect_loop(device):
         device.start_send_init_squence()
         return True
     else:
-        print(f"{device.name} failed to connect. skipping")
+        logger.error(f"{device.name}: failed to connect. Trying again shortly.")
         return False
 
 
 def disconnect_loop(device):
-    print(f"{device.name} planned disconnect")
+    logger.info(f"{device.name}: disconnecting: Planned by connect_timer")
     device.disconnect()
-    return (connect_timer, connect_loop)
+    return connect_loop
 
 
 def connect_disconnect_loop(devices):
@@ -368,11 +372,17 @@ def connect_disconnect_loop(devices):
     while True:
         try:
             if connect_loop(devices[i]):
-                next_time = datetime.now() + timedelta(seconds=disconnect_timer)
-                logger(f"{devices[i].name}: BT connected until {next_time:%H:%M:%S}")
-                sleep(disconnect_timer)
+                next_time = datetime.now() + timedelta(seconds=config['timer']['connected'])
 
-            disconnect_loop(devices[i])
+                logger.info(f"{devices[i].name}: BT connected until {next_time:%H:%M:%S}")
+                output_mqtt(devices[i].name, f"BT connected until {next_time:%H:%M:%S}")
+
+                sleep(config['timer']['connected'])
+
+                disconnect_loop(devices[i])
+            else:
+                logger.info(f'{devices[i].name}: Reconnecting in {config["timer"]["retry"]}')
+                sleep(config["timer"]["retry"])
         except:
             # catch all to keep thread going
             traceback.print_stack()
@@ -380,46 +390,104 @@ def connect_disconnect_loop(devices):
         i = (i + 1) % len(devices)
 
 
-def prepare_device(device, start_delay):
-    device_fun = device[0]
-    mac = device[1]
-    name = device[2]
+def prepare_device(device):
+    logger.info(f"{device['name']} preparing...")
 
-    print(f"prepare device {name}")
-    device = device_fun(mac, name, handle_single_value, handle_bulk_values)
+    if device['type'] == 'smartshunt':
+        device = victron_smartshunt.get_device_instance(device['mac'], device['name'], handle_single_value, handle_bulk_values)
+    elif device['type'] == 'smartsolar':
+        device = victron_smartsolar.get_device_instance(device['mac'], device['name'], handle_single_value, handle_bulk_values)
+    elif device['type'] == 'orionsmart':
+        device = victron_orion.get_device_instance(device['mac'], device['name'], handle_single_value, handle_bulk_values)
+
     return device
 
 
-# F9:8E:1C:EC:9C:72 SmartSolar HQ2027LDKCU
-# E7:79:E6:1D:EF:04 Orion
+def get_helper_string_device(devices):
+    return_string = ""
+    for count, device in enumerate(devices):
+        return_string += f"{count}: {device['name']} | "
+    return return_string
+
+
+def output_sys(device, text):
+    print(f"{device}:{text}", file=sys.stderr)
+    subprocess.run(
+        [
+            "/usr/bin/logger",
+            f"--id={os.getpid()}",
+            "-t",
+            "victron",
+            f"{device}:{text}",
+        ]
+    )
+
+
+def output_mqtt(device, text):
+    global client
+
+    client.publish(f"victron/{device}", text)
+
+
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description="victron BT reader")
-    parser.add_argument(
+    parser = argparse.ArgumentParser(description="Victron Reader (Bluetooth or Serial) \n\n"
+                                                 "Current supported devices:\n"
+                                                 "  Full: \n" 
+                                                 "  Partial: \n"
+                                                 "    - Smart Shunt (Bluetooth)\n"
+                                                 "    - Smart Solar (Bluetooth)\n"
+                                                 "    - Orion Smart (Bluetooth)\n"
+                                                 "    - Phenoix Inverter (Serial)",
+                                     formatter_class=argparse.RawTextHelpFormatter)
+    group01 = parser.add_argument_group()
+    group01.add_argument("--debug", action="store_true", help="Set log level to debug")
+    group01.add_argument("--info", action="store_true", help="Set log level to info")
+    group01.add_argument("--quiet", action="store_true", help="Set log level to error")
+
+    group02 = parser.add_argument_group()
+    group02.add_argument(
+        "-p",
+        "--print",
+        metavar="",
+        type=bool,
+        help="Print only one time and exit",
+        required=False,
+    )
+
+    group03 = parser.add_argument_group()
+    group03.add_argument(
         "-d",
         "--device",
         metavar="NUM",
         type=int,
-        help="1: smartshunt, 2: smartsolar, 3:orion",
+        help=get_helper_string_device(config['devices']),
         required=False,
     )
     args = parser.parse_args()
 
-    DEVICES = [
-        (victron_smartshunt.get_device_instance, "fd:d4:50:0f:6c:1b", "SmartdSchund"),
-        (victron_smartsolar.get_device_instance, "F9:8E:1C:EC:9C:72", "SmartSolar"),
-        (victron_orion.get_device_instance, "E7:79:E6:1D:EF:04", "Orion"),
-    ]
-    print(f"starting with devices: {args.device}")
-    if args.device:  # 0 equals false :(
-        prepare_device(DEVICES[args.device - 1], 0)
-        t1 = threading.Timer(0, connect_disconnect_loop, args=(device,)).start
-    else:
-        devices = []
-        for i, device in enumerate(DEVICES):
-            devices.append(prepare_device(device, i * 10))
-        t1 = threading.Timer(0, connect_disconnect_loop, args=(devices,))
-    t1.start()
+    if config['logger'] == 'mqtt':
+        import paho.mqtt.client as mqtt
 
-    print("manager event loop startinf")
-    victron_gatt.manager.run()
+        client = mqtt.Client()
+        client.connect(config['mqtt']['host'], config['mqtt']['port'], 60)
+        client.loop_start()
+
+    if args.device is not None:
+        if config['devices'][args.device]['protocol'] == 'bluetooth':
+            devices = [prepare_device(config['devices'][args.device])]
+            t1 = threading.Timer(0, connect_disconnect_loop, args=(devices,))
+        elif config['devices'][args.device]['protocol'] == 'serial':
+            print(f'{config["devices"][args.device]["name"]}: SERIAL COMMUNICATION NOT IMPLEMENTED')
+    else:
+        for count, device in enumerate(config['devices']):
+            devices = []
+
+            if config['devices'][args.device]['protocol'] == 'bluetooth':
+                devices.append(prepare_device(device))
+            elif config['devices'][args.device]['protocol'] == 'serial':
+                print(f'{device["name"]}: SERIAL COMMUNICATION NOT IMPLEMENTED')
+
+            t1 = threading.Timer(0, connect_disconnect_loop, args=(devices,))
+
+    t1.start()
