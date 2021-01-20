@@ -5,11 +5,11 @@ all async event driven
 from time import sleep
 import gatt
 from gatt.gatt_linux import Characteristic
+import logging
 import threading
 import time
 
-logger_name = "x"
-
+logger = logging.getLogger()
 
 # def find_characteristics_handles():
 # print("try charcteristics")
@@ -46,6 +46,7 @@ class AnyDevice(gatt.Device):
         ping,
         handle_uuid_map,
         init_sequence_template,
+        device_class
     ):
         super().__init__(mac_address, manager, managed=True)
         self.notification_table = notification_table
@@ -54,22 +55,23 @@ class AnyDevice(gatt.Device):
         self.handle_uuid_map = handle_uuid_map
         self.name = name
         self.init_sequence_template = init_sequence_template
+        self.device_class = device_class
 
     def connect_succeeded(self):
         super().connect_succeeded()
-        print(f"{self.name}: [{self.mac_address}] Connected")
+        logger.info(f"{self.name}: Connected!")
         self.connected = True
         time.sleep(0)
 
     def connect_failed(self, error):
         super().connect_failed(error)
-        print(f"{self.name}: [{self.mac_address}] Connection failed: {str(error)}")
+        logger.error(f"{self.name}: Connection failed: {str(error)}!")
         self.connected = False
         time.sleep(0)
 
     def disconnect_succeeded(self):
         super().disconnect_succeeded()
-        print(f"{self.name}: [{self.mac_address}] Disconnected")
+        logger.info(f"{self.name}: Disconnected!")
         time.sleep(0)
 
     def services_resolved(self):
@@ -111,7 +113,7 @@ class AnyDevice(gatt.Device):
         try:
             if characteristic.uuid in self.notification_table.keys():
                 handler_fun = self.notification_table[characteristic.uuid]
-                handler_fun(value, self.name)
+                handler_fun(value, self.name, self.device_class)
             else:
                 print(
                     f"{self.name}: unhandled characteristic updated: [{characteristic.uuid}]\tvalue:{value}"
@@ -169,9 +171,7 @@ class AnyDevice(gatt.Device):
         print(f"{self.name}: send ping done")
 
 
-def gatt_device_instance(
-    mac, name, notification_table, ping, handle_uuid_map, init_sequence_template
-):
+def gatt_device_instance(mac, name, notification_table, ping, handle_uuid_map, init_sequence_template, device_class):
     return AnyDevice(
         mac,
         name,
@@ -180,6 +180,7 @@ def gatt_device_instance(
         ping=ping,
         handle_uuid_map=handle_uuid_map,
         init_sequence_template=init_sequence_template,
+        device_class=device_class
     )
 
 
