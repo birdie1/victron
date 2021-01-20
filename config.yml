@@ -1,3 +1,14 @@
+## Add your devices here:
+#devices:
+#    - name: Shunt1
+#      type: smartshunt
+#      protocol: bluetooth
+#      mac: fd:d4:50:0f:6c:1b
+#    - name: Phoenix1
+#      type: pheonix
+#      protocol: serial
+#      port: /dev/ttyUSB0
+
 devices:
     - name: Shunt1
       type: smartshunt
@@ -16,10 +27,18 @@ devices:
       protocol: serial
       port: /dev/ttyUSB0
 
+# timer (in seconds)
+#
+#
+# repeat: 60
+#   - Will be used only if run programm in default time mode (Disconnection from device after collection is finished)
+#   - It repeats connecting after given time, regardless at which time it was disconnected
+#
 timer:
     connected: 30  # timer how long the device is connected
     disconnected: 30 # timer at which time the device is connected again after disconnect # during dev. for prod: 2 * 60
-    retry: 10
+    repeat: 180
+    retry: 30
 
 ## Logging:
 ## possible values:
@@ -27,7 +46,24 @@ timer:
 ##    - mqtt
 logger: mqtt
 
+## If logging is set to mqtt, these values must be filled
 mqtt:
-  host: localhost
-  port: 1883
-  base_topic: victron
+    host: localhost
+    port: 1883
+    base_topic: victron
+
+# Collected enitites by device type:
+# If you change this, the names must be the same like in the value tables from victron.py
+# These are the needed values to send a collection to logger, if other values are gathered (Usually they are from time to time), they are added to the collection too
+collections:
+  smartshunt:
+    - Charge Status
+    - Voltage
+    - Current
+    - Power
+    #- Starter
+    #- Deepest Discharge
+    #- Last Discharge
+    #- Average Discharge
+    #- Cumulative Ah Drawn
+    #- Time Since Last Full
