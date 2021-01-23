@@ -57,13 +57,16 @@ mqtt:
 # These are the needed values to send a collection to logger, if other values are gathered (Usually they are from time to time), they are added to the collection too
 collections:
   smartshunt:
-    - Charge Status
-    - Voltage
-    - Current
-    - Power
-    #- Starter
-    #- Deepest Discharge
-    #- Last Discharge
-    #- Average Discharge
-    #- Cumulative Ah Drawn
-    #- Time Since Last Full
+    battery:
+      - Charge Status
+    latest:
+      - Voltage
+      - Current
+      - Power
+      - Starter
+    history:
+      - Deepest Discharge
+      - Last Discharge
+      - Average Discharge
+      - Cumulative Ah Drawn
+      - Time Since Last Full

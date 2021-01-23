@@ -1,3 +1,4 @@
+import sys
 from os import name
 from victron_gatt import AnyDevice, gatt_device_instance
 
@@ -29,14 +30,16 @@ class Smartshunt:
     def __init__(self, config):
         self.config = config
         self.gatt_device = None
-        self.collection = {}
+        self.collections = {}
 
-        self.reset_collection()
+        for collection in self.config['collections']['smartshunt'].keys():
+            self.reset_collection(collection)
 
-    def reset_collection(self):
-        self.collection = {}
-        for col in self.config['collections']['smartshunt']:
-            self.collection[col] = None
+    def reset_collection(self, collection_name):
+        collection = {}
+        for item in self.config['collections']['smartshunt'][collection_name]:
+            collection[item] = None
+        self.collections[collection_name] = collection
 
     def get_gatt_device_instance(self, mac, name, handle_single_value, handle_bulk_values):
         UUID_FUNCTION_TABLE = {

@@ -242,6 +242,16 @@ def collection_check_full(collection):
     return True
 
 
+def set_value_in_collections(device, device_name, value_name, value):
+    for col_key in device.collections.keys():
+        if value_name in device.collections[col_key]:
+            device.collections[col_key][value_name] = value
+            device.collections[col_key][f'{value_name} Updated'] = f'{datetime.now():%Y-%m-%d %H:%M:%S}'
+            logger.debug(f'{device_name}: Setting value in collection: {value_name} to {value}')
+            return col_key
+    return False
+
+
 def handle_one_value(value, device_name, device):
     header = decode_header(value)
 
@@ -267,17 +277,19 @@ def handle_one_value(value, device_name, device):
         command, value, used = decode_var_len(value[consumed:], category[1])
 
     # Set collection value and check if collection is ready
-    device.collection[command[1]] = value
-    device.collection[f'{command[1]} Updated'] = f'{datetime.now():%Y-%m-%d %H:%M:%S}'
-    logger.debug(f'{device_name}: Setting value in collection: {command[1]} to {value}')
-    if collection_check_full(device.collection):
-        logger.info('Collection is full, sending data via MQTT')
-        logger.debug(f'{device_name}: Collection:  {json.dumps(device.collection)}')
-        output_mqtt(device_name, 'collection', device.collection)
+    value_name = command[1]
+    col_key = set_value_in_collections(device, device_name, value_name, value)
+    if not col_key:
+        logger.warning(f'{device_name}: {value_name} not in any collections, it will never be published')
+    else:
+        if collection_check_full(device.collections[col_key]):
+            logger.info('Collection is full, sending data via MQTT')
+            logger.debug(f'{device_name}: Collection:  {json.dumps(device.collections[col_key])}')
+            output_mqtt(device_name, col_key, device.collections[col_key])
 
-        device.reset_collection()
-        if not device.config['keep_connected'] and not config['time_disconnected']:
-            disconnect_loop(device.gatt_device)
+            device.reset_collection(col_key)
+            if not device.config['keep_connected'] and not config['time_disconnected']:
+                disconnect_loop(device.gatt_device)
 
     consumed += used
 
