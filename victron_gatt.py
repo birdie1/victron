@@ -140,6 +140,18 @@ class AnyDevice(gatt.Device):
         print(f"{self.name}: enable notifications done")
         time.sleep(0)
 
+    def unsubscribe_notifications(self):
+        logger.debug(f"{self.name}: Notifications: unsubscribe")
+        for key, uuid in self.handle_uuid_map.items():
+            try:
+                logger.debug(f"{self.name}: Notifications: unsubscribe for {key}: {uuid}")
+                c = self.characteristics[uuid]
+                c.enable_notifications(enabled=False)
+            except:
+                logger.warning(f"{self.name}: Notifications: unsubscribe failed: {uuid}")
+        #print(f"{self.name}: disnable notifications done")
+        time.sleep(0)
+
     def start_send_init_squence(self):
         global init_sequence
         init_sequence = self.init_sequence_template()
