@@ -276,20 +276,26 @@ def handle_one_value(value, device_name, device):
         category = VARLEN_CATEGORY_LOOKUP[header.category_type]
         command, value, used = decode_var_len(value[consumed:], category[1])
 
-    # Set collection value and check if collection is ready
     value_name = command[1]
-    col_key = set_value_in_collections(device, device_name, value_name, value)
-    if not col_key:
-        logger.warning(f'{device_name}: {value_name} not in any collections, it will never be published')
-    else:
-        if collection_check_full(device.collections[col_key]):
-            logger.info('Collection is full, sending data via MQTT')
-            logger.debug(f'{device_name}: Collection:  {json.dumps(device.collections[col_key])}')
-            output_mqtt(device_name, col_key, device.collections[col_key])
 
-            device.reset_collection(col_key)
-            if not device.config['keep_connected'] and not config['time_disconnected']:
-                disconnect_loop(device.gatt_device)
+    if not device.collections:
+        logger.debug(f'{device_name}: Collected {value_name} -> {value}')
+        output(device_name, value_name, value)
+    else:
+        # Set collection value and check if collection is ready
+
+        col_key = set_value_in_collections(device, device_name, value_name, value)
+        if not col_key:
+            logger.warning(f'{device_name}: {value_name} not in any collections, it will never be published')
+        else:
+            if collection_check_full(device.collections[col_key]):
+                logger.info(f'Collection is full, sending data via {device.config["logger"]}')
+                logger.debug(f'{device_name}: Collection:  {json.dumps(device.collections[col_key])}')
+                output(device_name, col_key, device.collections[col_key])
+
+                device.reset_collection(col_key)
+                if config['direct_disconnect']:
+                    disconnect_loop(device.gatt_device)
 
     consumed += used
 
@@ -400,7 +406,12 @@ def connect_disconnect_loop(devices):
         if connect_loop(devices[i]):
             if config['keep_connected']:
                 pass
-            elif config['time_disconnected']:
+            elif config['direct_disconnect']:
+                next_time = datetime.now() + timedelta(seconds=config['timer']['repeat'])
+                logger.info(
+                    f"{devices[i].name}: BT will reconnect in {config['timer']['repeat']} seconds. ({next_time:%H:%M:%S})")
+                sleep(config['timer']['connected'])
+            else:
                 next_time = datetime.now() + timedelta(seconds=config['timer']['connected'])
 
                 logger.info(f"{devices[i].name}: Bluetooth will disconnected in {config['timer']['connected']} seconds. ({next_time:%H:%M:%S})")
@@ -408,10 +419,6 @@ def connect_disconnect_loop(devices):
 
                 disconnect_loop(devices[i])
                 sleep(config['timer']['disconnected'])
-            else:
-                next_time = datetime.now() + timedelta(seconds=config['timer']['repeat'])
-                logger.info(f"{devices[i].name}: BT will reconnect in {config['timer']['repeat']} seconds. ({next_time:%H:%M:%S})")
-                sleep(config['timer']['connected'])
 
         else:
             logger.info(f'{devices[i].name}: Reconnecting in {config["timer"]["retry"]}')
@@ -445,15 +452,15 @@ def get_helper_string_device(devices):
     return return_string
 
 
-def output_sys(device, text):
-    print(f"{device}:{text}", file=sys.stderr)
+def output_syslog(device, category, value):
+    print(f"{device}|{category}:{value}", file=sys.stderr)
     subprocess.run(
         [
             "/usr/bin/logger",
             f"--id={os.getpid()}",
             "-t",
             "victron",
-            f"{device}:{text}",
+            f"{device}|{category}:{value}",
         ]
     )
 
@@ -485,7 +492,7 @@ if __name__ == "__main__":
                                                  "    - Phenoix Inverter (Serial)\n\n"
                                                  "Default behavior:\n"
                                                  "  1. It will connect to all known or given device\n"
-                                                 "  2. Collect and log data summary as defined at th config file\n"
+                                                 "  2. Collect and log data summary as defined at the config file\n"
                                                  "  3. Disconnect and connect again at the time given by config file",
                                      formatter_class=argparse.RawTextHelpFormatter)
     group01 = parser.add_argument_group()
@@ -516,9 +523,9 @@ if __name__ == "__main__":
     )
     group02.add_argument(
         "-t",
-        "--time-disconnected",
+        "--direct_disconnect",
         action="store_true",
-        help="Disconnect/Connect frequently, time given by Config [Default: Disconnect after receiving one collection of values, disconnection time set by config]",
+        help="Disconnect direct after getting one value [Default: Disconnect/Connect by time given in config]",
         required=False,
     )
 
@@ -541,7 +548,7 @@ if __name__ == "__main__":
         handler.setLevel(logging.ERROR)
 
     config['keep_connected'] = args.keep_connected
-    config['time_disconnected'] = args.time_disconnected
+    config['direct_disconnect'] = args.direct_disconnect
 
     if config['logger'] == 'mqtt':
         import paho.mqtt.client as mqtt
@@ -549,6 +556,10 @@ if __name__ == "__main__":
         client = mqtt.Client()
         client.connect(config['mqtt']['host'], config['mqtt']['port'], 60)
         client.loop_start()
+
+        output = output_mqtt
+    elif config['logger'] == 'syslog':
+        output = output_syslog
 
     if args.device is not None:
         if config['devices'][args.device]['protocol'] == 'bluetooth':
@@ -561,9 +572,9 @@ if __name__ == "__main__":
         for count, device in enumerate(config['devices']):
             devices = []
 
-            if config['devices'][args.device]['protocol'] == 'bluetooth':
+            if config['devices'][device]['protocol'] == 'bluetooth':
                 devices.append(prepare_device(device))
-            elif config['devices'][args.device]['protocol'] == 'serial':
+            elif config['devices'][device]['protocol'] == 'serial':
                 print(f'{device["name"]}: SERIAL COMMUNICATION NOT IMPLEMENTED')
 
             t1 = threading.Timer(0, connect_disconnect_loop, args=(devices,))
