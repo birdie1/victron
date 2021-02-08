@@ -355,7 +355,6 @@ def handle_bulk_values(value, device_name, device):
 
 
 def handle_single_value(value, device_name, device):
-
     pos = start_of_packet(value)
     while pos >= 0:
         consumed = handle_one_value(value[pos:], device_name, device)
@@ -374,7 +373,7 @@ def connect_loop(device):
         return False
     # maybe important. sleep(0) yields to other threads - give eventloop a chance to work
     time.sleep(0)
-    logger.info(f"{device.name}: connected: {device.connected}")
+    #logger.info(f"{device.name}: connected: {device.connected}")
     if device.connected:
         device.subscribe_notifications()
         time.sleep(2)
@@ -388,12 +387,13 @@ def connect_loop(device):
 
 def disconnect_loop(gatt_device):
     logger.info(f"{gatt_device.name}: disconnecting...")
+    #gatt_device.unsubscribe_notifications()
     gatt_device.disconnect()
     return connect_loop
 
 
 def connect_disconnect_loop(devices):
-    next_state = (0, connect_loop)
+    #next_state = (0, connect_loop)
     i = 0
     while True:
         #try:
@@ -419,7 +419,7 @@ def connect_disconnect_loop(devices):
         #except:
         #    # catch all to keep thread going
         #    traceback.print_stack()
-        sleep(2)
+        sleep(10)
         i = (i + 1) % len(devices)
 
 
@@ -517,8 +517,7 @@ if __name__ == "__main__":
     group02.add_argument(
         "-t",
         "--time-disconnected",
-        metavar="",
-        type=bool,
+        action="store_true",
         help="Disconnect/Connect frequently, time given by Config [Default: Disconnect after receiving one collection of values, disconnection time set by config]",
         required=False,
     )
@@ -555,6 +554,7 @@ if __name__ == "__main__":
         if config['devices'][args.device]['protocol'] == 'bluetooth':
             devices = [prepare_device(config['devices'][args.device])]
             t1 = threading.Timer(0, connect_disconnect_loop, args=(devices,))
+            #connect_disconnect_loop(devices)
         elif config['devices'][args.device]['protocol'] == 'serial':
             print(f'{config["devices"][args.device]["name"]}: SERIAL COMMUNICATION NOT IMPLEMENTED')
     else:
