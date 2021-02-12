@@ -1,6 +1,4 @@
-import sys
-from os import name
-from victron_gatt import AnyDevice, gatt_device_instance
+from victron_gatt import gatt_device_instance
 
 
 class Smartshunt:
@@ -32,8 +30,9 @@ class Smartshunt:
         self.gatt_device = None
         self.collections = {}
 
-        for collection in self.config['collections']['smartshunt'].keys():
-            self.reset_collection(collection)
+        if 'smartshunt' in self.config['collections']:
+            for collection in self.config['collections']['smartshunt'].keys():
+                self.reset_collection(collection)
 
     def reset_collection(self, collection_name):
         collection = {}

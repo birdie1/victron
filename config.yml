@@ -48,7 +48,7 @@ logger: mqtt
 
 ## If logging is set to mqtt, these values must be filled
 mqtt:
-    host: localhost
+    host: 192.168.3.2
     port: 1883
     base_topic: victron
 
@@ -70,3 +70,16 @@ collections:
       - Average Discharge
       - Cumulative Ah Drawn
       - Time Since Last Full
+  smartsolar:
+    latest:
+      - Voltage
+      - SmartSolar Power
+      - SmartSolar Solar Voltage
+      - SmartSolar Solar Current
+      - SmartSolar Battery Current
+    history:
+      - Battery Voltage Max
+      - Battery Voltage Min
+      - Total Work
+      - Solar Power Max
+      - Solar Voltage Max
