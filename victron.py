@@ -180,6 +180,24 @@ SIGNATURE = [
     (2, (0x19,)),
 ]
 
+SOLAR_HISTORY_VALUES = [
+    (12, 2, ("History", "Battery Voltage Max", "V", 100, True)),
+    (14, 2, ("History", "Battery Voltage Min", "V", 100, True)),
+    (21, 2, ("History", "Total Work", "kWh", 100, False)),
+    (27, 1, ("History", "Solar Power Max", "W", 1, False)),
+    (33, 2, ("History", "Solar Voltage Max", "V", 100, True)),
+    # array always is 36bytes
+]
+
+## for decode_var_len()
+COMMAND_POS = 0
+LENGHT_TYPE_POS = 1
+DATA_POS = 2
+HISTORY_MIN_CMD = 0x50
+HISTORY_MAX_CMD = HISTORY_MIN_CMD + 31
+
+
+
 
 def twos_comp(val, bits):
     """compute the 2's complement of int value val"""
@@ -268,44 +286,61 @@ def handle_one_value(value, device_name, device):
     used = 0
 
     if header.value_type == VALUE_TYPES.FIXED_LEN:
-        command, value, used = decode_fixed_len(value[consumed:])
-        if not command:
-            logger.warning(f'{device_name}: {value}')
-            return consumed
+        result, used = decode_fixed_len(value[consumed:])
+        #if not command:
+        #    logger.warning(f'{device_name}: {value}')
+        #    return consumed
+
+
     if header.value_type == VALUE_TYPES.VAR_LEN:
         category = VARLEN_CATEGORY_LOOKUP[header.category_type]
-        command, value, used = decode_var_len(value[consumed:], category[1])
+        result, used = decode_var_len(value[consumed:], category[1])
 
-    value_name = command[1]
+    for i in range(len(result)):
+        value_name = result[i]['command'][1]
+        value = result[i]['value']
 
-    if not device.collections:
-        logger.debug(f'{device_name}: Collected {value_name} -> {value}')
-        output(device_name, value_name, value)
-    else:
-        # Set collection value and check if collection is ready
-
-        col_key = set_value_in_collections(device, device_name, value_name, value)
-        if not col_key:
-            logger.warning(f'{device_name}: {value_name} not in any collections, it will never be published')
+        if not device.collections:
+            logger.debug(f'{device_name}: Collected {value_name} -> {value}')
+            output(device_name, value_name, value)
         else:
-            if collection_check_full(device.collections[col_key]):
-                logger.info(f'Collection is full, sending data via {device.config["logger"]}')
-                logger.debug(f'{device_name}: Collection:  {json.dumps(device.collections[col_key])}')
-                output(device_name, col_key, device.collections[col_key])
+            # Set collection value and check if collection is ready
 
-                device.reset_collection(col_key)
-                if config['direct_disconnect']:
-                    disconnect_loop(device.gatt_device)
+            col_key = set_value_in_collections(device, device_name, value_name, value)
+            if not col_key:
+                logger.warning(f'{device_name}: {value_name} not in any collections, it will never be published')
+            else:
+                if collection_check_full(device.collections[col_key]):
+                    logger.info(f'Collection is full, sending data via {device.config["logger"]}')
+                    logger.debug(f'{device_name}: Collection:  {json.dumps(device.collections[col_key])}')
+                    output(device_name, col_key, device.collections[col_key])
+
+                    device.reset_collection(col_key)
+                    if config['direct_disconnect']:
+                        disconnect_loop(device.gatt_device)
 
     consumed += used
 
     return consumed
 
 
+def decode_history_packet(command, value):
+    total_length = value[DATA_POS]
+    if len(value) < total_length:
+        return "", -1
+
+    values = []
+    for config in SOLAR_HISTORY_VALUES:
+        command = config[2]
+        data = value[config[0] : config[0] + config[1]]
+        values += [{"command": command, "value": convert_value(data, command)}]
+
+    day_index = value[35]
+    logger.debug(f"Day Index: {day_index -54} alternative (should match): {command-0x50}")
+    return values, total_length
+
+
 def decode_var_len(value, config_table):
-    COMMAND_POS = 0
-    LENGHT_TYPE_POS = 1
-    DATA_POS = 2
 
     length_type_field = value[LENGHT_TYPE_POS]
     length = length_type_field & 0x0F
@@ -313,14 +348,20 @@ def decode_var_len(value, config_table):
     data = value[DATA_POS : DATA_POS + length]
 
     command = value[COMMAND_POS]
+    if HISTORY_MIN_CMD <= command <= HISTORY_MAX_CMD:
+        return decode_history_packet(command, value)
+
     if command not in config_table:
         raise KeyError(f"unknown command 0x{command:x}")
 
+    #data_label = get_label(command, config_table)
+    #config = config_table[command]
+    #data_string = format_value(data, config)
     command = get_command(command, config_table)
     value_string = convert_value(data, command)
 
     consumed = 2 + length
-    return command, value_string, consumed
+    return [{"command": command, "value": value_string}], consumed
 
 
 def decode_fixed_len(value):
@@ -333,10 +374,10 @@ def decode_fixed_len(value):
     data_type = value[DATATYPE_POS]
     command = get_command(data_type, MIXED_SETTINGS_NAMES)
     if not command:
-        return False, f'Unknown command type 0x{command:0X}', consumed
+        raise KeyError(f"unknown command 0x{command:x}")
     value_string = convert_value(data, command)
 
-    return command, value_string, consumed
+    return [{"command": command, "value": value_string}], consumed
 
 
 
@@ -350,14 +391,14 @@ def handle_bulk_values(value, device_name, device):
     pos = start_of_packet(buffer)
     while len(buffer) > 0 and pos >= 0:
         consumed = handle_one_value(buffer[pos:], device_name, device)
+        if consumed == -1:
+            print("{device_name}: bulk: need more bytes")
+            return
         buffer = buffer[pos + consumed :]
         pos = start_of_packet(buffer)
         if pos > 0:  # TODO BUG: midnight hacking
             unknown = buffer[:pos]
             print(f"{device_name}: unknown value in bulk: {unknown}")
-        if consumed == -1:
-            print("{device_name}: bulk: need more bytes")
-            return
 
 
 def handle_single_value(value, device_name, device):
@@ -436,7 +477,7 @@ def prepare_device(dev):
     if dev['type'] == 'smartshunt':
         device = victron_smartshunt.Smartshunt(config)
     elif dev['type'] == 'smartsolar':
-        device = victron_smartsolar.get_device_instance(device['mac'], device['name'], handle_single_value, handle_bulk_values)
+        device = victron_smartsolar.Smartsolar(config)
     elif dev['type'] == 'orionsmart':
         device = victron_orion.get_device_instance(device['mac'], device['name'], handle_single_value, handle_bulk_values)
 
