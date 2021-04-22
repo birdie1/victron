@@ -95,66 +95,132 @@ FIXED_DATA_NAMES = {
 #    0xFF: ("Battery", "Charge Status", "%", 100, False),
 #}
 
+def extract_firmware_version(value):
+    if value == b'\xff\xff\xff':
+        return 'NO FIRMWARE'
+    if value[2] != 0:
+        version = f'v{value[2]}{value[1]:02}.{value[0]:02}'
+    else:
+        version = f'v{value[1]}.{value[0]:02}'
+    return version
+
+def convert_value_number(value, command):
+    converted = int.from_bytes(value, "little", signed=command[4])
+    return str(converted / command[3])
+
+def convert_value_int(value, command):
+    converted = int.from_bytes(value, "little", signed=command[4])
+    return str(int(converted / command[3]))
+
+def convert_value_string(value, command):
+    return str(value.decode("ASCII"))
+
+def convert_value_firmware(value, command):
+    return extract_firmware_version(value[1:])
+
+def convert_value_udf(value, command):
+    return extract_firmware_version(value[0:3])
+
+def convert_value_identify(value, command):
+    if int.from_bytes(value, "little") == 0:
+        return "normal operation (default)"
+    else:
+        return "identification mode (blink/beep)"
+def convert_value_unknown(value, command):
+    return str(value)
+
+
+# VALUE ARRAY
+# HEX VALUE -> (Type, Description, devider, signed, converter)
+# 0x??: ("Battery", "Time to go", "min", 1, False, convert_value_number),
+
 MIXED_SETTINGS_NAMES = {
-    0xFF: ("Battery", "Charge Status", "%", 100, False),
+    0xFE: ("Battery", "Time to go", "min", 1, False, convert_value_int),
+    0xFF: ("Battery", "Charge Status", "%", 100, False, convert_value_number),
 }
 
 HISTORY_VALUE_NAMES = {
-    0x00: ("History", "Deepest Discharge", "Ah", 10, True),
-    0x01: ("History", "Last Discharge", "Ah", 10, True),
-    0x02: ("History", "Average Discharge", "Ah", 10, True),
-    0x03: ("History", "Total Charge Cycles", "", 1, False),
-    0x04: ("History", "Full Discharges", "", 1, False),
-    0x05: ("History", "Cumulative Ah Drawn", "Ah", 10, True),
-    0x06: ("History", "Min Battery Voltage", "V", 100, False),
-    0x07: ("History", "Max Battery Voltage", "V", 100, False),
-    0x08: ("History", "Time Since Last Full", "sec", 1, True),
-    0x09: ("History", "Synchronizations", "", 1, False),
-    0x10: ("History", "Discharged Energy", "Ah", 100, False),
-    0x11: ("History", "Charged Energy", "Ah", 100, False),
+    0x00: ("History", "Deepest Discharge", "Ah", 10, True, convert_value_number),
+    0x01: ("History", "Last Discharge", "Ah", 10, True, convert_value_number),
+    0x02: ("History", "Average Discharge", "Ah", 10, True, convert_value_number),
+    0x03: ("History", "Total Charge Cycles", "", 1, False, convert_value_number),
+    0x04: ("History", "Full Discharges", "", 1, False, convert_value_number),
+    0x05: ("History", "Cumulative Ah Drawn", "Ah", 10, True, convert_value_number),
+    0x06: ("History", "Min Battery Voltage", "V", 100, False, convert_value_number),
+    0x07: ("History", "Max Battery Voltage", "V", 100, False, convert_value_number),
+    0x08: ("History", "Time Since Last Full", "sec", 1, True, convert_value_int),
+    0x09: ("History", "Synchronizations", "", 1, False, convert_value_number),
+    0x10: ("History", "Discharged Energy", "Ah", 100, False, convert_value_number),
+    0x11: ("History", "Charged Energy", "Ah", 100, False, convert_value_number),
 }
 
-SETTINGS_VALUE_NAMES = {
-    0x00: ("Settings", "Capacity", "Ah", 1, False),
-    0x01: ("Settings", "Charged Voltage", "V", 1, False),
-    0x02: ("Settings", "Tail Current", "A", 1, False),
-    0x03: ("Settings", "Charged Detection Time", "sec", 1, False),
-    0x04: ("Settings", "Charge effectic factor", "", 1, False),
-    0x05: ("Settings", "Peukert Coefficient", "", 1, False),
-    0x06: ("Settings", "Current Threshold", "%", 1, False),
-    0x07: ("Settings", "Time-to-go avg. per.", "sec", 1, False),
-    0x08: ("Settings", "Discharge Floor", "V?", 1, False),
+SETTINGS_AND_SOLAR_HISTORY_VALUE_NAMES = {
+    0x00: ("Settings", "Capacity", "Ah", 1, False, convert_value_number),
+    0x01: ("Settings", "Charged Voltage", "V", 1, False, convert_value_number),
+    0x02: ("Settings", "Tail Current", "A", 1, False, convert_value_number),
+    0x03: ("Settings", "Charged Detection Time", "sec", 1, False, convert_value_number),
+    0x04: ("Settings", "Charge effectic factor", "", 1, False, convert_value_number),
+    0x05: ("Settings", "Peukert Coefficient", "", 1, False, convert_value_number),
+    0x06: ("Settings", "Current Threshold", "%", 1, False, convert_value_number),
+    0x07: ("Settings", "Time-to-go avg. per.", "sec", 1, False, convert_value_number),
+    0x08: ("Settings", "Discharge Floor", "V?", 1, False, convert_value_number),
 }
 
 
 VALUE_VALUE_NAMES = {
-    0x8C: ("Latest", "Current", "A", 1000, True),
-    0x8D: ("Latest", "Voltage", "V", 100, False),
-    0x8E: ("Latest", "Power", "W", 1.0, True),
-    0x7D: ("Latest", "Starter", "V", 100, True),
-    0x8F: ("Latest", "SmartSolar Battery Current", "A", 10, True),
-    0xBC: ("Latest", "SmartSolar Power", "W", 100, True),
-    0xBD: ("Latest", "SmartSolar Solar Current", "A", 10, True),
-    0xBB: ("Latest", "SmartSolar Solar Voltage", "V", 100, True),
-    0xEF: ("Latest", "SmartSolar Setting Battery Voltage", "V", 1, True),
-    0xF0: ("Latest", "SmartSolar Setting Charge Current", "A", 1, True),
-    0xF6: ("Latest", "SmartSolar Setting Float Voltage", "V", 100, True),
+    0x8C: ("Latest", "Current", "A", 1000, True, convert_value_number),
+    0x8D: ("Latest", "Voltage", "V", 100, False, convert_value_number),
+    0x8E: ("Latest", "Power", "W", 1.0, True, convert_value_number),
+    0x7D: ("Latest", "Starter", "V", 100, True, convert_value_number),
+    0x8F: ("Latest", "SmartSolar Battery Current", "A", 10, True, convert_value_number),
+    0xBC: ("Latest", "SmartSolar Power", "W", 100, True, convert_value_number),
+    0xBD: ("Latest", "SmartSolar Solar Current", "A", 10, True, convert_value_number),
+    0xBB: ("Latest", "SmartSolar Solar Voltage", "V", 100, True, convert_value_number),
+    0xEF: ("Latest", "SmartSolar Setting Battery Voltage", "V", 1, True, convert_value_number),
+    0xF0: ("Latest", "SmartSolar Setting Charge Current", "A", 1, True, convert_value_number),
+    0xF6: ("Latest", "SmartSolar Setting Float Voltage", "V", 100, True, convert_value_number),
 }
 
 ORION_SETTINGS_NAMES = {
-    0x36: ("Settings", "Shutdown Voltage", "V", 100, True),
-    0x37: ("Settings", "Start Voltage", "V", 100, True),
-    0x38: ("Settings", "Delayed Start Voltage", "V", 100, True),
-    0x39: ("Settings", "Orion Start Delay", "sec", 1, True),
+    0x36: ("Settings", "Shutdown Voltage", "V", 100, True, convert_value_number),
+    0x37: ("Settings", "Start Voltage", "V", 100, True, convert_value_number),
+    0x38: ("Settings", "Delayed Start Voltage", "V", 100, True, convert_value_number),
+    0x39: ("Settings", "Orion Start Delay", "sec", 1, True, convert_value_number),
 }
 
 ORION_VALUE_NAMES = {
-    0xBB: ("Latest", "Input Voltage", "V", 100, True),
-    0xE9: ("Settings", "Delayed start voltage delay", "sec", 10, True),
+    0xBB: ("Latest", "Input Voltage", "V", 100, True, convert_value_number),
+    0xE9: ("Settings", "Delayed start voltage delay", "sec", 10, True, convert_value_number),
 }
+
+## Found in PDF: VE.Can registers
+PRODUCT_INFO_NAMES = {
+    0x00: ("Product", "ID", "", 1, True, convert_value_unknown),
+    0x01: ("Product", "Revision", "", 1, True, convert_value_unknown),
+    0x02: ("Product", "Firmware Version", "", 1, True, convert_value_firmware),
+    0x03: ("Product", "Minimum Firmware Version", "", 1, True, convert_value_unknown),
+    0x04: ("Product", "GroupID", "", 1, True, convert_value_unknown),
+    0x05: ("Product", "Hardware Revision", "", 1, True, convert_value_unknown),
+    0x0A: ("Product", "Serial", "", 1, True, convert_value_string),
+    0x0B: ("Product", "Model Name", "", 1, True, convert_value_unknown),
+    0x0C: ("Product", "Installation description 1", "", 1, True, convert_value_unknown),
+    0x0D: ("Product", "Installation description 2", "", 1, True, convert_value_unknown),
+    0x0E: ("Product", "Identify", "", 1, True, convert_value_identify),
+    0x10: ("Product", "Udf version", "", 1, True, convert_value_udf),
+    0x20: ("Product", "Uptime", "", 1, True, convert_value_unknown),
+    0x40: ("Product", "Capabilities (NOT DECODED, See PDF Ve.Direct Protocol)", "", 1, True, convert_value_unknown),
+}
+
+# Category lookup
+# Description: Lookup base command
+#       0x01190308 -> 0x01 you will find in the description pdfs from victron for other buses, like ve.direct or ve.can
+#
+# HEX VALUE -> (Description, value array, converter)
+# 0x??: ("Battery", "Time to go", "min", 1, False),
 VARLEN_CATEGORY_LOOKUP = {
+    0x01190308: ("Product Info", PRODUCT_INFO_NAMES),
     0x03190308: ("history values", HISTORY_VALUE_NAMES),
-    0x10190308: ("settings valu", SETTINGS_VALUE_NAMES),
+    0x10190308: ("settings valu", SETTINGS_AND_SOLAR_HISTORY_VALUE_NAMES),
     0xED190308: ("values values", VALUE_VALUE_NAMES),
     0x0F190308: ("mixed settings", MIXED_SETTINGS_NAMES),
     0x01190008: ("Orion Values UKNNOWN", ORION_VALUE_NAMES),
@@ -189,6 +255,7 @@ SOLAR_HISTORY_VALUES = [
     # array always is 36bytes
 ]
 
+
 ## for decode_var_len()
 COMMAND_POS = 0
 LENGHT_TYPE_POS = 1
@@ -209,11 +276,6 @@ def twos_comp(val, bits):
 def format_value(value, config):
     converted = int.from_bytes(value, "little", signed=config[4])
     return str(converted / config[3]) + config[2]
-
-
-def convert_value(value, config):
-    converted = int.from_bytes(value, "little", signed=config[4])
-    return str(converted / config[3])
 
 
 def get_label(command, command_names):
@@ -300,7 +362,7 @@ def handle_one_value(value, device_name, device):
         value_name = result[i]['command'][1]
         value = result[i]['value']
 
-        if not device.collections:
+        if not device.collections or args.all:
             logger.debug(f'{device_name}: Collected {value_name} -> {value}')
             output(device_name, value_name, value)
         else:
@@ -333,7 +395,7 @@ def decode_history_packet(command, value):
     for config in SOLAR_HISTORY_VALUES:
         command = config[2]
         data = value[config[0] : config[0] + config[1]]
-        values += [{"command": command, "value": convert_value(data, command)}]
+        values += [{"command": command, "value": convert_value_number(data, command)}]
 
     day_index = value[35]
     logger.debug(f"Day Index: {day_index -54} alternative (should match): {command-0x50}")
@@ -348,17 +410,20 @@ def decode_var_len(value, config_table):
     data = value[DATA_POS : DATA_POS + length]
 
     command = value[COMMAND_POS]
+    #print(f'<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<{value}')
+    #print(f'|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||{command}')
     if HISTORY_MIN_CMD <= command <= HISTORY_MAX_CMD:
+        print(f'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! DECODING HISTORY PACKAGE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
         return decode_history_packet(command, value)
 
     if command not in config_table:
-        raise KeyError(f"unknown command 0x{command:x}")
+        raise KeyError(f"unknown command (in var len) 0x{command:x} in {config_table}")
 
     #data_label = get_label(command, config_table)
     #config = config_table[command]
     #data_string = format_value(data, config)
     command = get_command(command, config_table)
-    value_string = convert_value(data, command)
+    value_string = command[5](data, command)
 
     consumed = 2 + length
     return [{"command": command, "value": value_string}], consumed
@@ -374,7 +439,7 @@ def decode_fixed_len(value):
     data_type = value[DATATYPE_POS]
     command = get_command(data_type, MIXED_SETTINGS_NAMES)
     if not command:
-        raise KeyError(f"unknown command 0x{command:x}")
+        raise KeyError(f"unknown command (in fixed len) 0x{command:x}")
     value_string = convert_value(data, command)
 
     return [{"command": command, "value": value_string}], consumed
@@ -445,7 +510,7 @@ def connect_disconnect_loop(devices):
     while True:
         #try:
         if connect_loop(devices[i]):
-            if config['keep_connected']:
+            if args.keep_connected:
                 pass
             elif config['direct_disconnect']:
                 next_time = datetime.now() + timedelta(seconds=config['timer']['repeat'])
@@ -564,7 +629,7 @@ if __name__ == "__main__":
     )
     group02.add_argument(
         "-t",
-        "--direct_disconnect",
+        "--direct-disconnect",
         action="store_true",
         help="Disconnect direct after getting one value [Default: Disconnect/Connect by time given in config]",
         required=False,
