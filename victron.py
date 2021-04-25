@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import copy
 import faulthandler
 import json
 import logging
@@ -306,7 +307,7 @@ def start_of_packet(value):
     for offset, _ in enumerate(value):
         # slice from start of signature to end
         result = signature_complete(value[offset:], SIGNATURE)
-        if result == True:
+        if result:
             return offset
     return -1
 
@@ -370,7 +371,7 @@ def handle_one_value(value, device_name, device):
 
             col_key = set_value_in_collections(device, device_name, value_name, value)
             if not col_key:
-                logger.warning(f'{device_name}: {value_name} not in any collections, it will never be published')
+                logger.debug(f'{device_name}: {value_name} not in any collections, it will never be published')
             else:
                 if collection_check_full(device.collections[col_key]):
                     logger.info(f'Collection is full, sending data via {device.config["logger"]}')
@@ -413,7 +414,7 @@ def decode_var_len(value, config_table):
     #print(f'<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<{value}')
     #print(f'|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||{command}')
     if HISTORY_MIN_CMD <= command <= HISTORY_MAX_CMD:
-        print(f'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! DECODING HISTORY PACKAGE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+        #print(f'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! DECODING HISTORY PACKAGE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
         return decode_history_packet(command, value)
 
     if command not in config_table:
@@ -457,27 +458,27 @@ def handle_bulk_values(value, device_name, device):
     while len(buffer) > 0 and pos >= 0:
         consumed = handle_one_value(buffer[pos:], device_name, device)
         if consumed == -1:
-            print("{device_name}: bulk: need more bytes")
+            logger.debug(f"UNRECOGNIZED DATA: {device_name}: bulk: need more bytes")
             return
         buffer = buffer[pos + consumed :]
         pos = start_of_packet(buffer)
         if pos > 0:  # TODO BUG: midnight hacking
             unknown = buffer[:pos]
-            print(f"{device_name}: unknown value in bulk: {unknown}")
+            logger.debug(f"UNRECOGNIZED DATA: {device_name}: unknown value in bulk: {unknown}")
 
 
 def handle_single_value(value, device_name, device):
+    value_origin = copy.deepcopy(value)
     pos = start_of_packet(value)
     while pos >= 0:
         consumed = handle_one_value(value[pos:], device_name, device)
         value = value[pos + consumed :]
         pos = start_of_packet(value)
     if len(value) > 0:
-        print(f"{device_name}: unknown single packet: {value}")
+        logger.debug(f"UNRECOGNIZED DATA: {device_name}: unknown single packet: value:{value} - value_origin:{value_origin}")
 
 
 def connect_loop(device):
-    logger.info(f"{device.name}: connecting...")
     try:
         device.connect()
     except:
@@ -489,7 +490,7 @@ def connect_loop(device):
     if device.connected:
         device.subscribe_notifications()
         time.sleep(2)
-        print(f"{device.name} send init sequence")
+        logger.debug(f"{device.name} send init sequence")
         device.start_send_init_squence()
         return True
     else:
@@ -673,7 +674,8 @@ if __name__ == "__main__":
             t1 = threading.Timer(0, connect_disconnect_loop, args=(devices,))
             #connect_disconnect_loop(devices)
         elif config['devices'][args.device]['protocol'] == 'serial':
-            print(f'{config["devices"][args.device]["name"]}: SERIAL COMMUNICATION NOT IMPLEMENTED')
+            logger.error(f'{config["devices"][args.device]["name"]}: SERIAL COMMUNICATION NOT IMPLEMENTED')
+            sys.exit(1)
     else:
         for count, device in enumerate(config['devices']):
             devices = []
@@ -681,7 +683,7 @@ if __name__ == "__main__":
             if config['devices'][device]['protocol'] == 'bluetooth':
                 devices.append(prepare_device(device))
             elif config['devices'][device]['protocol'] == 'serial':
-                print(f'{device["name"]}: SERIAL COMMUNICATION NOT IMPLEMENTED')
+                logger.warning(f'{device["name"]}: SERIAL COMMUNICATION NOT IMPLEMENTED')
 
             t1 = threading.Timer(0, connect_disconnect_loop, args=(devices,))
 

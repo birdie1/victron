@@ -57,8 +57,13 @@ mqtt:
 # These are the needed values to send a collection to logger, if other values are gathered (Usually they are from time to time), they are added to the collection too
 collections:
   smartshunt:
+    product:
+      - Serial
+      - Firmware Version
+      - Udf version
     battery:
       - Charge Status
+      - Time to go
     latest:
       - Voltage
       - Current
