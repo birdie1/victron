@@ -77,28 +77,28 @@ class AnyDevice(gatt.Device):
     def services_resolved(self):
         super().services_resolved()
         self.connected = True
-        print(f"{self.name}: [{self.mac_address}] Resolved services")
+        logger.debug(f"{self.name}: [{self.mac_address}] Resolved services")
         for service in self.services:
             if service.uuid in well_known_uuids:
                 char_name = well_known_uuids[service.uuid]
             else:
                 char_name = "unknown endpoint"
-            print("[%s]  Service [%s] (%s)" % (self.mac_address, service.uuid, char_name))
+            logger.debug(f"[{self.mac_address}] Service [{service.uuid}] ({char_name})")
             for characteristic in service.characteristics:
-                print("[%s]    Characteristic [%s]" % (self.mac_address, characteristic.uuid))
+                logger.debug(f"[{self.mac_address}] Characteristic [{characteristic.uuid}]")
                 self.characteristics[characteristic.uuid] = characteristic
         time.sleep(0)
 
     def characteristic_enable_notification_succeeded(self, characteristic, value):
-        print(f"{self.name}: enable notification succeded")
+        logger.debug(f"{self.name}: enable notification succeded")
         time.sleep(0)
 
     def characteristic_enable_notification_failed(self, characteristic, value):
-        print(f"{self.name}: enable notification failed")
+        logger.debug(f"{self.name}: enable notification failed")
         time.sleep(0)
 
     def characteristic_write_value_succeeded(self, characteristic):
-        print(f"{self.name}: write succeeded")
+        logger.debug(f"{self.name}: write succeeded")
         try:
             self.send_init_sequence()
         except StopIteration:
@@ -106,7 +106,7 @@ class AnyDevice(gatt.Device):
         time.sleep(0)
 
     def characteristic_write_value_failed(self, characteristic, error):
-        print(f"write failed on charactersitic {characteristic.uuid}:merror: {error}")
+        logger.warning(f"write failed on charactersitic {characteristic.uuid}:merror: {error}")
         time.sleep(0)
 
     def characteristic_value_updated(self, characteristic, value):
@@ -115,29 +115,29 @@ class AnyDevice(gatt.Device):
                 handler_fun = self.notification_table[characteristic.uuid]
                 handler_fun(value, self.name, self.device_class)
             else:
-                print(
+                logger.debug(
                     f"{self.name}: unhandled characteristic updated: [{characteristic.uuid}]\tvalue:{value}"
                 )
         except Exception as e:
-            print(f"{self.name}: error handling: {value}: {e}")
+            logger.debug(f"UNRECOGNIZED DATA: {self.name}: error handling: {value}: {e}")
         time.sleep(0)
 
     init_sequence = None
     characteristics = {}
 
     def subscribe_notifications(self):
-        print(f"{self.name}:subscribe notifications")
+        logger.debug(f"{self.name}:subscribe notifications")
         if not self.characteristics:
-            print(f"{self.name}:characteristics empty, sleep & retry - CHECK DEVICE PAIRING!")
+            logger.debug(f"{self.name}:characteristics empty, sleep & retry - CHECK DEVICE PAIRING!")
             time.sleep(2)
         for key, uuid in self.handle_uuid_map.items():
             try:
-                print(f"{self.name}: notifications for {key}: {uuid}")
+                logger.debug(f"{self.name}: notifications for {key}: {uuid}")
                 c = self.characteristics[uuid]
                 c.enable_notifications()
             except:
-                print(f"{self.name}: error subscribe notificatoion {uuid}")
-        print(f"{self.name}: enable notifications done")
+                logger.debug(f"{self.name}: error subscribe notification {uuid}")
+        logger.debug(f"{self.name}: enable notifications done")
         time.sleep(0)
 
     def unsubscribe_notifications(self):
@@ -162,25 +162,25 @@ class AnyDevice(gatt.Device):
         if not self.characteristics:
             self.characteristics_missing()
         c = self.characteristics[uuid]
-        print(f"{self.name}: sending {handle}, data{data}")
+        logger.debug(f"{self.name}: sending {handle}, data{data}")
         c.write_value(data)
         time.sleep(1)
 
     def characteristics_missing(self):
-        print(f"{self.name}: connected but characteristics not yet enumerated, sleep an retry")
-        print(f"{self.name}: CHECK DEVICE PAIRING!")
+        logger.debug(f"{self.name}: connected but characteristics not yet enumerated, sleep an retry")
+        logger.debug(f"{self.name}: CHECK DEVICE PAIRING!")
         time.sleep(2)
         self.start_send_init_squence()
 
     def send_ping(self):
-        print(f"{self.name}: send ping")
+        logger.debug(f"{self.name}: send ping")
         for packet in self.ping:
             c = self.characteristics[self.handle_uuid_map[packet[0]]]
             hs = packet[1]
             b = bytearray.fromhex(hs)
-            print(f"{self.name}: sending {packet[0]}, data{b}")
+            logger.debug(f"{self.name}: sending {packet[0]}, data{b}")
             c.write_value(b)
-        print(f"{self.name}: send ping done")
+        logger.debug(f"{self.name}: send ping done")
 
 
 def gatt_device_instance(mac, name, notification_table, ping, handle_uuid_map, init_sequence_template, device_class):
@@ -199,8 +199,8 @@ def gatt_device_instance(mac, name, notification_table, ping, handle_uuid_map, i
 manager = gatt.DeviceManager(adapter_name="hci0")
 # init event loop
 def start_event_loop_in_thread():
-    print("manager thread starting")
+    logger.debug("manager thread starting")
     t1 = threading.Thread(target=lambda: manager.run())
     t1.daemon = True
     t1.start()
-    print("manager thread running")
+    logger.debug("manager thread running")
