@@ -23,6 +23,7 @@ import victron_gatt
 import victron_orion
 import victron_smartshunt
 import victron_smartsolar
+import victron_phoenix
 
 with open("config.yml", 'r') as ymlfile:
     config = yaml.full_load(ymlfile)
@@ -552,6 +553,11 @@ def prepare_device(dev):
     return gatt_device
 
 
+def get_serial_data(device):
+    data = device.get_data()
+    output(device.name, 'latest', data)
+
+
 def get_helper_string_device(devices):
     return_string = ""
     for count, device in enumerate(devices):
@@ -669,21 +675,23 @@ if __name__ == "__main__":
         output = output_syslog
 
     if args.device is not None:
-        if config['devices'][args.device]['protocol'] == 'bluetooth':
-            devices = [prepare_device(config['devices'][args.device])]
+        device = config['devices'][args.device]
+        if device['protocol'] == 'bluetooth':
+            devices = [prepare_device(device)]
             t1 = threading.Timer(0, connect_disconnect_loop, args=(devices,))
             #connect_disconnect_loop(devices)
-        elif config['devices'][args.device]['protocol'] == 'serial':
-            logger.error(f'{config["devices"][args.device]["name"]}: SERIAL COMMUNICATION NOT IMPLEMENTED')
-            sys.exit(1)
+        elif device['protocol'] == 'serial':
+            if device['type'] == 'phoenix':
+                get_serial_data(victron_phoenix.Phoenix(device['name'], device['port']))
     else:
         for count, device in enumerate(config['devices']):
             devices = []
 
-            if config['devices'][device]['protocol'] == 'bluetooth':
+            if device['protocol'] == 'bluetooth':
                 devices.append(prepare_device(device))
-            elif config['devices'][device]['protocol'] == 'serial':
-                logger.warning(f'{device["name"]}: SERIAL COMMUNICATION NOT IMPLEMENTED')
+            elif device['protocol'] == 'serial':
+                if device['type'] == 'phoenix':
+                    get_serial_data(victron_phoenix.Phoenix(device['name'], device['port']))
 
             t1 = threading.Timer(0, connect_disconnect_loop, args=(devices,))
 
