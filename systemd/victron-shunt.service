@@ -5,6 +5,7 @@ RestartSec=5
 StartLimitBurst=10
 
 [Service]
+WorkingDirectory=/opt/victron
 ExecStart=/opt/victron/victron.py -d 0 -k
 Type=simple
 Restart=always
