@@ -152,6 +152,10 @@ HISTORY_VALUE_NAMES = {
     0x07: ("History", "Max Battery Voltage", "V", 100, False, convert_value_number),
     0x08: ("History", "Time Since Last Full", "sec", 1, True, convert_value_int),
     0x09: ("History", "Synchronizations", "", 1, False, convert_value_number),
+    0x0A: ("History", "Number of Low Voltage Alarms", "", 1, False, convert_value_number),
+    0x0B: ("History", "Number of High Voltage Alarms", "", 1, False, convert_value_number),
+    0x0E: ("History", "Minimum Starter Voltage (1)", "", 100, False, convert_value_number),
+    0x0F: ("History", "Maximum Starter Voltage (1)", "", 100, False, convert_value_number),
     0x10: ("History", "Discharged Energy", "Ah", 100, False, convert_value_number),
     0x11: ("History", "Charged Energy", "Ah", 100, False, convert_value_number),
 }
@@ -165,7 +169,9 @@ SETTINGS_AND_SOLAR_HISTORY_VALUE_NAMES = {
     0x05: ("Settings", "Peukert Coefficient", "", 1, False, convert_value_number),
     0x06: ("Settings", "Current Threshold", "%", 1, False, convert_value_number),
     0x07: ("Settings", "Time-to-go avg. per.", "sec", 1, False, convert_value_number),
-    0x08: ("Settings", "Discharge Floor", "V?", 1, False, convert_value_number),
+    0x08: ("Settings", "Discharge Floor", "%", 1, False, convert_value_number),
+    0x09: ("Settings", "Relay Low Soc Clear", "%", 1, False, convert_value_number),
+    0x34: ("Settings", "User Current Zero (read only)", "", 1, False, convert_value_number),
 }
 
 
