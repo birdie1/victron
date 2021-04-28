@@ -1,12 +1,12 @@
 [Unit]
-Description=Get solar data from victron smart solar
-After=bluetooth.service mosquitto.service
+Description=Get data from victron phoenix
+After=mosquitto.service
 RestartSec=5
 StartLimitBurst=10
 
 [Service]
 WorkingDirectory=/opt/victron
-ExecStart=/opt/victron/victron.py -d 1
+ExecStart=/opt/victron/victron.py -d 3
 Type=simple
 Restart=always
 
