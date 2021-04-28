@@ -520,7 +520,7 @@ def connect_disconnect_loop(devices):
         if connect_loop(devices[i]):
             if args.keep_connected:
                 pass
-            elif config['direct_disconnect']:
+            elif args.direct_disconnect:
                 next_time = datetime.now() + timedelta(seconds=config['timer']['repeat'])
                 logger.info(
                     f"{devices[i].name}: BT will reconnect in {config['timer']['repeat']} seconds. ({next_time:%H:%M:%S})")
@@ -560,8 +560,16 @@ def prepare_device(dev):
 
 
 def get_serial_data(device):
-    data = device.get_data()
-    output(device.name, 'latest', data)
+    while True:
+        data = device.get_data()
+        output(device.name, 'latest', data)
+
+        if args.keep_connected:
+            pass
+        elif args.direct_disconnect:
+            return 0
+        else:
+            sleep(config['timer']['disconnected'])
 
 
 def get_helper_string_device(devices):
@@ -680,11 +688,14 @@ if __name__ == "__main__":
     elif config['logger'] == 'syslog':
         output = output_syslog
 
+    # Set to True if getting data from bluetootj
+    bt = False
     if args.device is not None:
         device = config['devices'][args.device]
         if device['protocol'] == 'bluetooth':
             devices = [prepare_device(device)]
             t1 = threading.Timer(0, connect_disconnect_loop, args=(devices,))
+            bt = True
             #connect_disconnect_loop(devices)
         elif device['protocol'] == 'serial':
             if device['type'] == 'phoenix':
@@ -695,13 +706,15 @@ if __name__ == "__main__":
 
             if device['protocol'] == 'bluetooth':
                 devices.append(prepare_device(device))
+                t1 = threading.Timer(0, connect_disconnect_loop, args=(devices,))
+                bt = True
             elif device['protocol'] == 'serial':
                 if device['type'] == 'phoenix':
                     get_serial_data(victron_phoenix.Phoenix(device['name'], device['port']))
 
-            t1 = threading.Timer(0, connect_disconnect_loop, args=(devices,))
 
-    t1.start()
+    if bt:
+        t1.start()
 
-    logger.info("Gatt manager event loop starting...")
-    victron_gatt.manager.run()
+        logger.info("Gatt manager event loop starting...")
+        victron_gatt.manager.run()
