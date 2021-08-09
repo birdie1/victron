@@ -40,6 +40,7 @@ class VictronBLE:
                     i += 1
                     time.sleep(1)
 
+                logger.info(f'{self.config["name"]}: device disconnected, stopping gatt manager now!')
                 manager.stop()
 
     def handle_value(self, characteristics, data):

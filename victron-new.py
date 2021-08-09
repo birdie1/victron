@@ -24,7 +24,7 @@ logger_format = '[%(levelname)-7s] (%(asctime)s) %(filename)s::%(lineno)d %(mess
 logging.basicConfig(level=logging.INFO,
                     format=logger_format,
                     datefmt='%Y-%m-%d %H:%M:%S',
-                    filename=f"main.log")
+                    filename=f"logs/victron-new.log")
 logger = logging.getLogger()
 
 handler = logging.StreamHandler(sys.stdout)
