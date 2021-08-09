@@ -11,6 +11,9 @@ I use this repository to have a running version with mqtt for my camping car.
 If you want more information about the development and a wireshard dissector, refer to vvvrrooomm's repository.
 
 ## New version for the new bluetooth gatt api used in the beta firmware of the SmartShunt
+See [https://community.victronenergy.com/questions/93919/victron-bluetooth-ble-protocol-publication.html](https://community.victronenergy.com/questions/93919/victron-bluetooth-ble-protocol-publication.html)
+for more information about how to activate the new gatt protocol with the beta firmware.
+
 Execute `python3 victron-new.py` after adding your SmartShunt to the configfile `config-new.yml`
 
 The new script connect, gathering the data once and then disconnect. More features will be aded later. It is already way more stable without the connection problem like the other.
