@@ -21,14 +21,14 @@ with open("config-new.yml", 'r') as ymlfile:
 
 
 logger_format = '[%(levelname)-7s] (%(asctime)s) %(filename)s::%(lineno)d %(message)s'
-logging.basicConfig(level=logging.DEBUG,
+logging.basicConfig(level=logging.INFO,
                     format=logger_format,
                     datefmt='%Y-%m-%d %H:%M:%S',
                     filename=f"main.log")
 logger = logging.getLogger()
 
 handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.DEBUG)
+handler.setLevel(logging.INFO)
 formatter = logging.Formatter(logger_format)
 handler.setFormatter(formatter)
 logger.addHandler(handler)
@@ -102,8 +102,8 @@ if __name__ == "__main__":
         logging.getLogger().setLevel(logging.ERROR)
         handler.setLevel(logging.ERROR)
 
-    config['keep_connected'] = args.keep_connected
-    config['direct_disconnect'] = args.direct_disconnect
+    #config['keep_connected'] = args.keep_connected
+    #config['direct_disconnect'] = args.direct_disconnect
 
     if config['logger'] == 'mqtt':
         import paho.mqtt.client as mqtt
