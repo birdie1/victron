@@ -1,0 +1,18 @@
+## Add your devices here:
+devices:
+    - name: Shunt1
+      type: smartshunt
+      protocol: bluetooth-ble
+      mac: fd:d4:50:0f:6c:1b
+
+## Logging:
+## possible values:
+##    - syslog
+##    - mqtt
+logger: mqtt
+
+## If logging is set to mqtt, these values must be filled
+mqtt:
+    host: 192.168.3.2
+    port: 1883
+    base_topic: victron

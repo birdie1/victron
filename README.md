@@ -10,6 +10,17 @@ This repository is based on [https://github.com/vvvrrooomm/victron](https://gith
 I use this repository to have a running version with mqtt for my camping car.
 If you want more information about the development and a wireshard dissector, refer to vvvrrooomm's repository.
 
+## New version for the new bluetooth gatt api used in the beta firmware of the SmartShunt
+Execute `python3 victron-new.py` after adding your SmartShunt to the configfile `config-new.yml`
+
+The new script connect, gathering the data once and then disconnect. More features will be aded later. It is already way more stable without the connection problem like the other.
+### Supported/tested devices:
+Bluetooth:
+- Smart Shunt
+### Outputs
+- mqtt
+- syslog
+
 ## Ability of this repository
 The script only tested with python 3.7 and 3.8.
 ### Supported/tested devices:
