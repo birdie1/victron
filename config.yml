@@ -26,6 +26,10 @@ devices:
       type: phoenix
       protocol: serial
       port: /dev/ttyUSB0
+    - name: Shunt1
+      type: smartshunt
+      protocol: bluetooth-ble
+      mac: fd:d4:50:0f:6c:1b
 
 # timer (in seconds)
 #

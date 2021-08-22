@@ -5,6 +5,7 @@ import faulthandler
 import json
 import logging
 import os
+import queue
 import subprocess
 import sys
 import threading
@@ -14,7 +15,7 @@ from collections import namedtuple
 from datetime import datetime, timedelta
 from enum import IntEnum
 from time import sleep
-from lib.victron_ble.victron_gatt_ble import manager
+from lib.victron import manager
 
 with open("config-new.yml", 'r') as ymlfile:
     config = yaml.full_load(ymlfile)
@@ -32,6 +33,13 @@ handler.setLevel(logging.INFO)
 formatter = logging.Formatter(logger_format)
 handler.setFormatter(formatter)
 logger.addHandler(handler)
+
+
+def victron_thread(thread_count, vdevice_config, thread_q):
+    #if vdevice_config['protocol'] == 'bluetooth-ble':
+    from lib.victron import Victron
+    v = Victron(vdevice_config, output, args, thread_count, thread_q)
+    v.read_once()
 
 
 def output_syslog(device, category, value):
@@ -67,9 +75,6 @@ def get_helper_string_device(devices):
     return return_string
 
 if __name__ == "__main__":
-    ## REMOVE LATER, ONLY FOR SEGFAULT DEBUGGING
-    faulthandler.enable(all_threads=True)
-
     parser = argparse.ArgumentParser(description="Victron Reader (Bluetooth or Serial) \n\n"
                                                  "Current supported devices:\n"
                                                  "  Full: \n" 
@@ -117,6 +122,7 @@ if __name__ == "__main__":
         output = output_syslog
 
     bt = False
+    q = queue.Queue()
 
     # Build device list with all devices or just the given by commandline
     if args.device is not None:
@@ -125,16 +131,21 @@ if __name__ == "__main__":
         devices_config = config['devices']
 
     for count, device_config in enumerate(devices_config):
-        victron_devices = []
-
-        if device_config['protocol'] == 'bluetooth-ble':
-            from lib.victron_ble.victron import VictronBLE
-            v = VictronBLE(device_config, output)
-            v.read_once()
+        if 'bluetooth' in device_config['protocol']:
             bt = True
+        t = threading.Timer(2+(count*5), victron_thread, args=(count, device_config, q))
 
-    if bt:
-        logger.info("Gatt manager event loop starting...")
-        manager.run()
+        t.start()
 
+    #if bt:
+    #    logger.info("Gatt manager event loop starting...")
+    #    manager.run()
+
+    devices_count = len(devices_config)
+    while True:
+        if 'finished' in q.get():
+            devices_count -= 1
+        if devices_count == 0:
+            logger.info(f'All devices/threads finished')
+            break
 

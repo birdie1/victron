@@ -25,7 +25,7 @@ class AnyDevice(gatt.Device):
         handle_value_function,
         keep_alive,
         handle_uuid_map,
-        device_class
+        connect_error_target
     ):
         super().__init__(mac_address, manager, managed=True)
         self.handle_value_function = handle_value_function
@@ -33,7 +33,7 @@ class AnyDevice(gatt.Device):
         self.keep_alive = keep_alive
         self.handle_uuid_map = handle_uuid_map
         self.name = name
-        self.device_class = device_class
+        self.connect_error_target = connect_error_target
 
     def connect_succeeded(self):
         super().connect_succeeded()
@@ -45,6 +45,7 @@ class AnyDevice(gatt.Device):
         super().connect_failed(error)
         logger.error(f"{self.name}: Connection failed: {str(error)}!")
         self.connected = False
+        self.connect_error_target()
         time.sleep(0)
 
     def disconnect_succeeded(self):
@@ -72,7 +73,6 @@ class AnyDevice(gatt.Device):
 
     def characteristic_value_updated(self, characteristic, value):
         try:
-            #self.handle_value_function(value, self.name, self.device_class)
             self.handle_value_function(characteristic, value)
         except Exception as e:
             logger.debug(f"UNRECOGNIZED DATA: {self.name}: error handling: {value}: {e}")
@@ -86,7 +86,7 @@ class AnyDevice(gatt.Device):
 
 
 
-def gatt_device_instance(mac, name, handle_value_function, keep_alive, handle_uuid_map, device_class):
+def gatt_device_instance(manager, mac, name, handle_value_function, keep_alive, handle_uuid_map, connect_error_target):
     return AnyDevice(
         mac,
         name,
@@ -94,8 +94,8 @@ def gatt_device_instance(mac, name, handle_value_function, keep_alive, handle_uu
         handle_value_function=handle_value_function,
         keep_alive=keep_alive,
         handle_uuid_map=handle_uuid_map,
-        device_class=device_class
+        connect_error_target=connect_error_target
     )
 
 
-manager = gatt.DeviceManager(adapter_name="hci0")
+

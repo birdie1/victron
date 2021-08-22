@@ -4,7 +4,7 @@ import lib.helper
 logger = logging.getLogger()
 
 
-class Smartshunt:
+class SmartshuntBLE:
     # +--------------------------------------+-------------------------+-------------+------+-------+---------+---------------------------------+
     # | UUID                                 | Characteristic          | Access      | Type | Scale | Unit    | Special values                  |
     # +--------------------------------------+-------------------------+-------------+------+-------+---------+------------+--------------------+
@@ -53,14 +53,15 @@ class Smartshunt:
         self.config = config
         self.count_values = 0
 
-    def get_gatt_device_instance(self, handle_value_function):
+    def get_gatt_device_instance(self, manager, handle_value_function, connect_error_target):
         return gatt_device_instance(
+            manager,
             self.config['mac'],
             handle_value_function=handle_value_function,
             keep_alive=self.keep_alive_handle_uuid_map,
             handle_uuid_map=self.read_handle_uuid_map,
             name=self.config['name'],
-            device_class=self,
+            connect_error_target=connect_error_target,
         )
 
     def handle_one_value(self, output, characteristic, data):
