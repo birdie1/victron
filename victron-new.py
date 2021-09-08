@@ -35,10 +35,9 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 
-def victron_thread(thread_count, vdevice_config, thread_q):
-    #if vdevice_config['protocol'] == 'bluetooth-ble':
+def victron_thread(thread_count, config, vdevice_config, thread_q):
     from lib.victron import Victron
-    v = Victron(vdevice_config, output, args, thread_count, thread_q)
+    v = Victron(config, vdevice_config, output, args, thread_count, thread_q)
     v.read_once()
 
 
@@ -57,15 +56,24 @@ def output_syslog(device, category, value):
 
 def output_mqtt(device, category, value):
     global client
+    global config
 
     if value == "":
-        client.publish(f"victron/{device}", category)
+        pub = f'{config["mqtt"]["base_topic"]}/{device}'
+        data = category
     else:
+        pub = f'{config["mqtt"]["base_topic"]}/{device}/{category}'
         if type(value) is dict:
             data = json.dumps(value)
         else:
-            data = '{"payload": ' + value + ' }'
-        client.publish(f"victron/{device}/{category}", data)
+            data = value
+
+    # TODO: Needs fix
+    #if config['mqtt']['hass'] is True:
+    #    bla = f'homeassistant/sensor/{config["mqtt"]["base_topic"]}/device/}'
+    #    client.publish("/".join(seq), result[key])
+
+    client.publish(pub, data)
 
 
 def get_helper_string_device(devices):
@@ -74,12 +82,15 @@ def get_helper_string_device(devices):
         return_string += f"{count}: {device['name']} | "
     return return_string
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Victron Reader (Bluetooth or Serial) \n\n"
                                                  "Current supported devices:\n"
                                                  "  Full: \n" 
+                                                 "    - Phoenix Inverter (Serial)\n"
+                                                 "    - Smart Shunt (Serial)\n"
                                                  "  Partial: \n"
-                                                 "    - Smart Shunt (Bluetooth)\n"
+                                                 "    - Smart Shunt (Bluetooth BLE)\n"
                                                  "Default behavior:\n"
                                                  "  1. It will connect to all known or given device\n"
                                                  "  2. Collect and log data summary as defined at the config file\n"
@@ -89,12 +100,21 @@ if __name__ == "__main__":
     group01.add_argument("--debug", action="store_true", help="Set log level to debug")
     group01.add_argument("--quiet", action="store_true", help="Set log level to error")
 
+    group02 = parser.add_argument_group()
+    group02.add_argument(
+        "-c",
+        "--collection",
+        action="store_true",
+        help="Output only collections specified in config instead of single values",
+        required=False,
+    )
+
     group03 = parser.add_argument_group()
     group03.add_argument(
         "-d",
         "--device",
-        metavar="NUM",
-        type=int,
+        metavar="NUM / NAME",
+        type=str,
         help=get_helper_string_device(config['devices']),
         required=True,
     )
@@ -115,25 +135,35 @@ if __name__ == "__main__":
 
         client = mqtt.Client()
         client.connect(config['mqtt']['host'], config['mqtt']['port'], 60)
+
         client.loop_start()
 
         output = output_mqtt
     elif config['logger'] == 'syslog':
         output = output_syslog
 
-    bt = False
+    #bt = False
     q = queue.Queue()
 
     # Build device list with all devices or just the given by commandline
     if args.device is not None:
-        devices_config = [config['devices'][args.device]]
+        try:
+            dev_id = int(args.device)
+        except ValueError:
+            for count, device_config in enumerate(config['devices']):
+                if device_config['name'] == args.device:
+                    dev_id = count
+                    break
+                logger.error(f'{args.device} not found in config')
+                sys.exit(1)
+        devices_config = [config['devices'][dev_id]]
     else:
         devices_config = config['devices']
 
     for count, device_config in enumerate(devices_config):
-        if 'bluetooth' in device_config['protocol']:
-            bt = True
-        t = threading.Timer(2+(count*5), victron_thread, args=(count, device_config, q))
+        #if 'bluetooth' in device_config['protocol']:
+        #    bt = True
+        t = threading.Timer(2+(count*5), victron_thread, args=(count, config, device_config, q))
 
         t.start()
 

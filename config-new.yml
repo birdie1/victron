@@ -4,6 +4,15 @@ devices:
       type: smartshunt
       protocol: bluetooth-ble
       mac: fd:d4:50:0f:6c:1b
+    - name: Shunt2
+      type: smartshunt
+      protocol: serial
+      port: /dev/victron-smartshunt
+      mac: fd:d4:50:0f:6c:1b
+    - name: Phoenix1
+      type: phoenix
+      protocol: serial
+      port: /dev/victron-phoenix
 
 ## Logging:
 ## possible values:
@@ -16,3 +25,53 @@ mqtt:
     host: 192.168.3.2
     port: 1883
     base_topic: victron
+    hass: True
+
+# Collected enitites by device type:
+# If you change this, the names must be the same like in the value tables from victron.py
+# These are the needed values to send a collection to logger, if other values are gathered (Usually they are from time to time), they are added to the collection too
+collections:
+  smartshunt:
+    product:
+      - Product ID
+      - Firmware Version
+    battery:
+      - State Of Charge
+      - Time To Go
+    latest:
+      - Voltage
+      - Current
+      - Power
+      - Starter Battery Voltage
+      - Used Energy
+    history:
+      - Deepest Discharge
+      - Last Discharge
+      - Average Discharge
+      - Cumulative Ah Drawn
+      - Time Since Last Full
+      - Charge Cycles
+      - Full Discharges
+      - Battery Voltage min
+      - Battery Voltage max
+      - Synchonisations
+      - Alarm Voltage low
+      - Alarm Voltage high
+      - Starter Battery Voltage min
+      - Starter Battery Voltage max
+      - Total Discharged Energy
+      - Total Charged Energy
+  phoenix:
+    product:
+      - Product ID
+      - Serial
+      - Firmware
+      - Production Date
+    latest:
+      - Voltage
+      - AC Voltage
+      - AC Current
+      - Mode
+      - Status
+      - Warning
+      - Alarm Reason

@@ -17,6 +17,7 @@ for more information about how to activate the new gatt protocol with the beta f
 Execute `python3 victron-new.py` after adding your SmartShunt to the configfile `config-new.yml`
 
 The new script connect, gathering the data once and then disconnect. More features will be aded later. It is already way more stable without the connection problem like the other.
+
 ### Supported/tested devices:
 Bluetooth:
 - Smart Shunt
@@ -46,14 +47,14 @@ These scripts are written for my specific config file. If you have your devices 
 If you want the serial communication with the Phoenix Inverter, you must install this library:
 - vedirect: https://github.com/karioja/vedirect
 
-You need to inbstall some requirements: `pip3 install -r requirements.txt`
+You need to install some requirements: `pip3 install -r requirements.txt`
 
 Add your devices to the configuration file.
-Start the script for your desired device: `python3 victrom.py -d 0`
+Start the script for your desired device: `python3 victron.py -d 0`
 
 There are some more commandline arguments, you can view them with `python3 victron.py --help`
 
 ## Known issues
 - The bluetooth part have sometimes trouble to connect or just crashes. But systemd will restart the process automatically. I don't know why this happens and I don't know if it is a problem with this code or the gatt linux library. If you want to debug: Fell free!
 - Orion Smart is not yet rewritten to the new classes and may not work correctly
-- Drom smart solar you can't get the history values. The protocol itself is decoded (and working) for this part, but the smart solar doesn't send the data. I guess we need to send another init sequence. I didn't figure out the corrent sequence yet!
+- From smart solar you can't get the history values. The protocol itself is decoded (and working) for this part, but the smart solar doesn't send the data. I guess we need to send another init sequence. I didn't figure out the corrent sequence yet!
