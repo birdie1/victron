@@ -41,6 +41,16 @@ class Smartsolar:
         self.port = port
         self.ve = Vedirect(self.port, 60)
 
+    def get_mapping_table(self):
+        return self.MAP
+
+    def get_device_info(self):
+        data = self.ve.read_data_single()
+        pid = self.MAP['PID'][4](data['PID'], self.MAP['PID'])
+        ser = self.MAP['SER#'][4](data['SER#'], self.MAP['SER#'])
+        fw = self.MAP['FW'][4](data['FW'], self.MAP['FW'])
+        return pid, ser, fw
+
     def get_data(self, output):
         for key, value in self.ve.read_data_single().items():
             if key not in self.MAP:

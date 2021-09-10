@@ -54,24 +54,23 @@ def output_syslog(device, category, value):
     )
 
 
-def output_mqtt(device, category, value):
+def output_mqtt(device_name, subtopic, value, hass_config=False):
     global client
     global config
 
-    if value == "":
-        pub = f'{config["mqtt"]["base_topic"]}/{device}'
-        data = category
+    if hass_config:
+        pub = subtopic
+        data = value
     else:
-        pub = f'{config["mqtt"]["base_topic"]}/{device}/{category}'
-        if type(value) is dict:
-            data = json.dumps(value)
+        if value == "":
+            pub = f'{config["mqtt"]["base_topic"]}/{device_name}'
+            data = subtopic
         else:
-            data = value
-
-    # TODO: Needs fix
-    #if config['mqtt']['hass'] is True:
-    #    bla = f'homeassistant/sensor/{config["mqtt"]["base_topic"]}/device/}'
-    #    client.publish("/".join(seq), result[key])
+            pub = f'{config["mqtt"]["base_topic"]}/{device_name}/{subtopic}'
+            if type(value) is dict:
+                data = json.dumps(value)
+            else:
+                data = value
 
     client.publish(pub, data)
 

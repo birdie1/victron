@@ -18,9 +18,15 @@ class Victron:
         self.cmd = cmd
         self.thread_count = thread_count
         self.thread_q = thread_q
-        self.collections = {}
+        self.collections = None
         self.victron_device = None
         self.gatt_device = None
+
+        if self.cmd.collection:
+            if device_config['type'] in self.config['collections']:
+                self.collections = {}
+                for collection in self.config['collections'][device_config['type']].keys():
+                    self.reset_collection(collection)
 
         if self.device_config['protocol'] == 'serial':
             if self.device_config['type'] == 'phoenix':
@@ -33,6 +39,18 @@ class Victron:
                 from lib.victron_serial.victron_smartsolar import Smartsolar
                 self.victron_device = Smartsolar(self.device_config['name'], self.device_config['port'])
 
+            if self.config['mqtt']['hass']:
+                pid, ser, fw = self.victron_device.get_device_info()
+                mapping_table = self.victron_device.get_mapping_table()
+                helper.send_hass_config_payload(self.device_config['name'],
+                                                pid,
+                                                ser,
+                                                fw,
+                                                mapping_table,
+                                                self.config['mqtt']['base_topic'],
+                                                self.given_output,
+                                                self.collections)
+
         elif self.device_config['protocol'] == 'bluetooth-ble':
             if self.device_config['type'] == 'smartshunt':
                 from lib.victron_ble.victron_smartshunt_ble import SmartshuntBLE
@@ -42,9 +60,6 @@ class Victron:
             logger.error(f"{self.device_config['name']}: Missing or unknown device type")
             self.device_finished()
 
-        if device_config['type'] in self.config['collections']:
-            for collection in self.config['collections'][device_config['type']].keys():
-                self.reset_collection(collection)
 
     def read_once(self):
         if self.device_config['protocol'] == 'serial':

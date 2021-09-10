@@ -1,3 +1,5 @@
+import json
+
 def convert_value_number(value, command):
     converted = int.from_bytes(value, "little", signed=True)
     return str(converted / command[3])
@@ -36,7 +38,7 @@ def convert_firmware(fw_raw, command):
     if fw_raw[0] == '0':
         return f'{fw_raw[1:2]}.{fw_raw[2:]}'
     else:
-        return f'{fw_raw[0:1]}{fw_raw[1:2]}.{fw_raw[2:]}'
+        return f'{fw_raw[0:1]}.{fw_raw[1:2]}{fw_raw[2:]}'
 
 
 def convert_production_date(value, command):
@@ -48,3 +50,90 @@ def collection_check_full(collection):
         if value is None:
             return False
     return True
+
+
+def build_hass_discovery_config(device_name, model, serial, firmware, sensor_config, base_topic, subtopic, value_template, collection):
+    """
+    Builds the config for homeassistant mqtt discovery
+    :param device_name: Name of device
+    :param model: model description of device
+    :param serial: serial number of device
+    :param firmware: firmware of device
+    :param sensor_config: mapping row from decive classes
+    :param base_topic: MQTT base topic
+    :param subtopic: Subtopic is either the name of the sensor (e.g. Voltage) or of the collection (e.g. latest)
+    :param value_template: sensor (e.g. Voltage)
+    :param collection: None or a collection
+    :return:
+    """
+    hass_config_topic = f'homeassistant/sensor/{device_name}/{value_template.replace(" ", "_")}/config'
+    hass_config_data = {}
+
+    if collection is None:
+        hass_config_data["unique_id"] = f'{device_name}_{subtopic}_victron'
+        hass_config_data["name"] = f'{device_name} {subtopic}'
+    else:
+        hass_config_data["unique_id"] = f'{device_name}_{value_template}_{collection}_victron'
+        hass_config_data["name"] = f'{device_name} {value_template}'
+
+    if sensor_config[2] == '%':
+        hass_config_data["device_class"] = 'battery'
+    elif sensor_config[2] == 'V':
+        hass_config_data["device_class"] = 'voltage'
+    elif sensor_config[2] == 'A' or sensor_config[2] == 'Ah':
+        hass_config_data["device_class"] = 'current'
+    elif sensor_config[2] == 'W' or sensor_config[2] == 'Wh' or sensor_config[2] == 'kWh':
+        hass_config_data["device_class"] = 'power'
+    else:
+        pass
+
+    if sensor_config[2] != '':
+        hass_config_data["unit_of_measurement"] = sensor_config[2]
+
+    if sensor_config[0] == 'Latest':
+        hass_config_data["state_class"] = 'measurement'
+
+    hass_config_data["json_attributes_topic"] = f'{base_topic}/{device_name}/{subtopic}'
+    hass_config_data["state_topic"] = f'{base_topic}/{device_name}/{subtopic}'
+
+    if collection is not None:
+        hass_config_data["value_template"] = "{{ value_json['" + value_template + "'] }}"
+
+    hass_device = {
+        "identifiers": [f'victron_{device_name}'],
+        "manufacturer": 'Victron',
+        "model": f'{model} Serial: {serial}',
+        "name": device_name,
+        "sw_version": firmware
+    }
+
+    hass_config_data["device"] = hass_device
+
+    return hass_config_topic, json.dumps(hass_config_data)
+
+
+def send_hass_config_payload(device_name, pid, ser, fw, mapping_table, base_topic, output, collections):
+    for key, value in mapping_table.items():
+        subtopic = value[1]
+        value_template = value[1]
+        collection = None
+
+        if collections is not None:
+            for ckey, cvalue in collections.items():
+                if value[1] in cvalue:
+                    subtopic = ckey
+                    collection = ckey
+
+        hass_config_subtopic, hass_config_data = build_hass_discovery_config(
+            device_name,
+            pid,
+            ser,
+            fw,
+            value,
+            base_topic,
+            subtopic,
+            value_template,
+            collection
+        )
+
+        output(device_name, hass_config_subtopic, hass_config_data, True)
