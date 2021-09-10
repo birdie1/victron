@@ -1,14 +1,15 @@
 ## Add your devices here:
+## Example Serial:
+#    - name: Phoenix1
+#    type: phoenix
+#    protocol: serial
+#    port: /dev/victron-phoenix
+# Example Bluetooth and BLE
+#    - name: Shunt1
+#    type: smartshunt
+#    protocol: bluetooth | bluetooth-ble
+#    mac: fd:d4:50:0f:6c:1b
 devices:
-    - name: Shunt1
-      type: smartshunt
-      protocol: bluetooth-ble
-      mac: fd:d4:50:0f:6c:1b
-    - name: Shunt2
-      type: smartshunt
-      protocol: serial
-      port: /dev/victron-smartshunt
-      mac: fd:d4:50:0f:6c:1b
     - name: Phoenix1
       type: phoenix
       protocol: serial
@@ -32,7 +33,7 @@ mqtt:
 # These are the needed values to send a collection to logger, if other values are gathered (Usually they are from time to time), they are added to the collection too
 collections:
   smartshunt:
-    product:
+    device:
       - Product ID
       - Firmware Version
     battery:
@@ -62,7 +63,7 @@ collections:
       - Total Discharged Energy
       - Total Charged Energy
   phoenix:
-    product:
+    device:
       - Product ID
       - Serial
       - Firmware
@@ -75,3 +76,26 @@ collections:
       - Status
       - Warning
       - Alarm Reason
+  smartsolar:
+    device:
+      - Day sequence Number (0..364)
+      - Product ID
+      - Serial
+      - Firmware
+      - Production Date
+    latest:
+      - Voltage
+      - Current
+      - Voltage Panel
+      - Power
+      - Status
+      - MPPT Tracker Operation Mode
+      - Off Reason
+      - Virtual Load Output
+      - Error Code
+    history:
+      - Energy All Time
+      - Energy Today
+      - Energy Today Max
+      - Energy Yesterday
+      - Energy Yesterday Max

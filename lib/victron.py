@@ -29,11 +29,13 @@ class Victron:
             elif self.device_config['type'] == 'smartshunt':
                 from lib.victron_serial.victron_smartshunt import Smartshunt
                 self.victron_device = Smartshunt(self.device_config['name'], self.device_config['port'])
+            elif self.device_config['type'] == 'smartsolar':
+                from lib.victron_serial.victron_smartsolar import Smartsolar
+                self.victron_device = Smartsolar(self.device_config['name'], self.device_config['port'])
 
         elif self.device_config['protocol'] == 'bluetooth-ble':
             if self.device_config['type'] == 'smartshunt':
                 from lib.victron_ble.victron_smartshunt_ble import SmartshuntBLE
-
                 self.victron_device = SmartshuntBLE(self.device_config)
 
         if self.victron_device is None:
