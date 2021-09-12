@@ -26,11 +26,11 @@ class SmartshuntBLE:
     # This one exists as well, but we dont need it:
     # '6597ffff-4bda-4c1e-af4b-551c4cf74769': ("Special", "Keep-alive", "s", 1000, False, lib.helper.convert_value_number),
     VALUE_NAMES = {
-        '6597eeff-4bda-4c1e-af4b-551c4cf74769': ("Latest", "Consumed Ah", "Ah", 10, True, lib.helper.convert_value_number),
+        '6597eeff-4bda-4c1e-af4b-551c4cf74769': ("Latest", "Used Energy", "Ah", 10, True, lib.helper.convert_value_number),
         '6597ed8e-4bda-4c1e-af4b-551c4cf74769': ("Latest", "Power", "W", 1, True, lib.helper.convert_value_number),
         '6597ed8d-4bda-4c1e-af4b-551c4cf74769': ("Latest", "Voltage", "V", 100, True, lib.helper.convert_value_number),
         '6597ed8c-4bda-4c1e-af4b-551c4cf74769': ("Latest", "Current", "A", 1000, True, lib.helper.convert_value_number),
-        '65970fff-4bda-4c1e-af4b-551c4cf74769': ("Latest", "State of charge", "%", 100, False, lib.helper.convert_value_number),
+        '65970fff-4bda-4c1e-af4b-551c4cf74769': ("Latest", "State Of Charge", "%", 100, False, lib.helper.convert_value_number),
     }
 
     keep_alive_handle_uuid_map = {
