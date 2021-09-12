@@ -23,14 +23,14 @@ class SmartshuntBLE:
 
     # UUID: (Category, Description, Unit, Multiplier, Signed?, Interpret_function)
     #'6597eeff-4bda-4c1e-af4b-551c4cf74769': ("Latest", "Consumed Ah", "Ah", 10, True, convert_value_number),
-
+    # This one exists as well, but we dont need it:
+    # '6597ffff-4bda-4c1e-af4b-551c4cf74769': ("Special", "Keep-alive", "s", 1000, False, lib.helper.convert_value_number),
     VALUE_NAMES = {
         '6597eeff-4bda-4c1e-af4b-551c4cf74769': ("Latest", "Consumed Ah", "Ah", 10, True, lib.helper.convert_value_number),
         '6597ed8e-4bda-4c1e-af4b-551c4cf74769': ("Latest", "Power", "W", 1, True, lib.helper.convert_value_number),
         '6597ed8d-4bda-4c1e-af4b-551c4cf74769': ("Latest", "Voltage", "V", 100, True, lib.helper.convert_value_number),
         '6597ed8c-4bda-4c1e-af4b-551c4cf74769': ("Latest", "Current", "A", 1000, True, lib.helper.convert_value_number),
         '65970fff-4bda-4c1e-af4b-551c4cf74769': ("Latest", "State of charge", "%", 100, False, lib.helper.convert_value_number),
-        '6597ffff-4bda-4c1e-af4b-551c4cf74769': ("Special", "Keep-alive", "s", 1000, False, lib.helper.convert_value_number),
     }
 
     keep_alive_handle_uuid_map = {
@@ -72,9 +72,6 @@ class SmartshuntBLE:
         :param data: Incoming data
         :return: Boolean: If last expected device and a disconnect could follow
         """
-        #print(characteristic.service)
-        #print(characteristic.uuid)
-        #print(characteristic._path)
 
         if characteristic.uuid not in self.VALUE_NAMES.keys():
             logger.warning(f'{self.config["name"]}: Characteristic ({characteristic.uuid}) not found in known Table')
@@ -82,8 +79,7 @@ class SmartshuntBLE:
             self.count_values += 1
             command = self.VALUE_NAMES[characteristic.uuid]
             result_value = command[5](data, command)
-            output(self.config['name'], command[1], result_value)
-            #print(f'{command[1]}: {result_value}')
+            output(command[1], result_value)
 
         if self.count_values == len(self.VALUE_NAMES):
             logger.info(f'{self.config["name"]}: Gathering data successful')

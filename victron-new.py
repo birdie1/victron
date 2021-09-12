@@ -15,7 +15,6 @@ from collections import namedtuple
 from datetime import datetime, timedelta
 from enum import IntEnum
 from time import sleep
-from lib.victron import manager
 
 with open("config-new.yml", 'r') as ymlfile:
     config = yaml.full_load(ymlfile)
@@ -38,7 +37,7 @@ logger.addHandler(handler)
 def victron_thread(thread_count, config, vdevice_config, thread_q):
     from lib.victron import Victron
     v = Victron(config, vdevice_config, output, args, thread_count, thread_q)
-    v.read_once()
+    v.read()
 
 
 def output_syslog(device, category, value):
@@ -88,6 +87,7 @@ if __name__ == "__main__":
                                                  "  Full: \n" 
                                                  "    - Phoenix Inverter (Serial)\n"
                                                  "    - Smart Shunt (Serial)\n"
+                                                 "    - Smart Solar (Serial)\n"
                                                  "  Partial: \n"
                                                  "    - Smart Shunt (Bluetooth BLE)\n"
                                                  "Default behavior:\n"
@@ -141,7 +141,6 @@ if __name__ == "__main__":
     elif config['logger'] == 'syslog':
         output = output_syslog
 
-    #bt = False
     q = queue.Queue()
 
     # Build device list with all devices or just the given by commandline
@@ -160,21 +159,5 @@ if __name__ == "__main__":
         devices_config = config['devices']
 
     for count, device_config in enumerate(devices_config):
-        #if 'bluetooth' in device_config['protocol']:
-        #    bt = True
         t = threading.Timer(2+(count*5), victron_thread, args=(count, config, device_config, q))
-
         t.start()
-
-    #if bt:
-    #    logger.info("Gatt manager event loop starting...")
-    #    manager.run()
-
-    devices_count = len(devices_config)
-    while True:
-        if 'finished' in q.get():
-            devices_count -= 1
-        if devices_count == 0:
-            logger.info(f'All devices/threads finished')
-            break
-

@@ -68,6 +68,7 @@ class AnyDevice(gatt.Device):
         for service in self.services:
             if service.uuid in self.handle_uuid_map:
                 for characteristic in service.characteristics:
+                    logger.debug(f'{self.name}: Read value from characteristic {characteristic}')
                     characteristic.read_value()
         time.sleep(0)
 
@@ -83,7 +84,6 @@ class AnyDevice(gatt.Device):
             if service.uuid in self.keep_alive:
                 ## 60 seconds!
                 service.write_value("60ea")
-
 
 
 def gatt_device_instance(manager, mac, name, handle_value_function, keep_alive, handle_uuid_map, connect_error_target):
