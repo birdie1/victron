@@ -175,6 +175,9 @@ class VictronBluetooth:
         if self.device_config['type'] == 'smartsolar':
             from lib.victron_bluetooth.victron_smartsolar import Smartsolar
             self.victron_device = Smartsolar(self.device_config)
+        if self.device_config['type'] == 'smartshunt':
+            from lib.victron_bluetooth.victron_smartshunt import Smartshunt
+            self.victron_device = Smartshunt(self.device_config)
 
     def get_device_info(self):
         pass
@@ -186,13 +189,6 @@ class VictronBluetooth:
         self.gatt_device.disconnect()
         logger.debug(f'{self.device_config["name"]}: Thread finished')
         manager.stop()
-
-    def handle_value(self, characteristics, data):
-        last_expected_value = self.victron_device.handle_one_value(self.output, characteristics, data)
-
-        if last_expected_value:
-            self.gatt_device.disconnect()
-            self.finished_target()
 
     def read(self, output):
         self.output = output
