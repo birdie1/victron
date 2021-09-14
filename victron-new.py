@@ -21,7 +21,7 @@ with open("config-new.yml", 'r') as ymlfile:
 
 
 logger_format = '[%(levelname)-7s] (%(asctime)s) %(filename)s::%(lineno)d %(message)s'
-logging.basicConfig(level=logging.INFO,
+logging.basicConfig(level=logging.DEBUG,
                     format=logger_format,
                     datefmt='%Y-%m-%d %H:%M:%S',
                     filename=f"logs/victron-new.log")

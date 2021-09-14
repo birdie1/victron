@@ -1,10 +1,45 @@
 import json
 
+## START: BLUETOOTH CONVERT FUNCTIONS
+def extract_firmware_version(value):
+    if value == b'\xff\xff\xff':
+        return 'NO FIRMWARE'
+    if value[2] != 0:
+        version = f'v{value[2]}{value[1]:02}.{value[0]:02}'
+    else:
+        version = f'v{value[1]}.{value[0]:02}'
+    return version
+
 def convert_value_number(value, command):
-    converted = int.from_bytes(value, "little", signed=True)
+    converted = int.from_bytes(value, "little", signed=command[4])
     return str(converted / command[3])
 
+def convert_value_int(value, command):
+    converted = int.from_bytes(value, "little", signed=command[4])
+    return str(int(converted / command[3]))
 
+def convert_value_string(value, command):
+    return str(value.decode("ASCII"))
+
+def convert_value_firmware(value, command):
+    return extract_firmware_version(value[1:])
+
+def convert_value_udf(value, command):
+    return extract_firmware_version(value[0:3])
+
+def convert_value_identify(value, command):
+    if int.from_bytes(value, "little") == 0:
+        return "normal operation (default)"
+    else:
+        return "identification mode (blink/beep)"
+
+def convert_value_unknown(value, command):
+    return str(value)
+## END: BLUETOOTH CONVERT FUNCTIONS
+
+# TODO: Merge Bluetooth and Serial convert functions
+
+## START: SERIAL CONVERT FUNCTIONS
 def convert_int_factor(value, command):
     data = int(value) * command[3]
     if type(data) == int:
@@ -35,6 +70,8 @@ def convert_warn_ar(value, command):
 
 
 def convert_firmware(fw_raw, command):
+    if fw_raw == b'\xff\xff\xff':
+        return 'NO FIRMWARE'
     if fw_raw[0] == '0':
         return f'{fw_raw[1:2]}.{fw_raw[2:]}'
     else:
@@ -43,6 +80,7 @@ def convert_firmware(fw_raw, command):
 
 def convert_production_date(value, command):
     return f'year: 20{value[2:4]}, week: {value[4:6]}'
+## END: SERIAL CONVERT FUNCTIONS
 
 
 def collection_check_full(collection):
