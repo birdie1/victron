@@ -178,6 +178,9 @@ class VictronBluetooth:
         if self.device_config['type'] == 'smartshunt':
             from lib.victron_bluetooth.victron_smartshunt import Smartshunt
             self.victron_device = Smartshunt(self.device_config)
+        if self.device_config['type'] == 'orionsmart':
+            from lib.victron_bluetooth.victron_orionsmart import OrionSmart
+            self.victron_device = OrionSmart(self.device_config)
         else:
             logger.error(f'Got unknown type ({self.device_config["type"]}) from config!')
 
@@ -214,8 +217,6 @@ class VictronBluetooth:
 
         manager.stop_discovery()
         manager.run()
-
-
 
     def handle_bulk_values(self, value):
         self.buffer.extend(value)
