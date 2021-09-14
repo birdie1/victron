@@ -14,9 +14,9 @@ If you want more information about the development and a wireshard dissector, re
 See [https://community.victronenergy.com/questions/93919/victron-bluetooth-ble-protocol-publication.html](https://community.victronenergy.com/questions/93919/victron-bluetooth-ble-protocol-publication.html)
 for more information about how to activate the new gatt protocol with the beta firmware.
 
-Execute `python3 victron-new.py` after adding your SmartShunt to the configfile `config-new.yml`
+The new script connect, gathering the data once and then disconnect on Bluetooth BLE. Other Bluetooth stuff is still supported by the script.
 
-The new script connect, gathering the data once and then disconnect. More features will be aded later. It is already way more stable without the connection problem like the other.
+More features will be added soon. 
 
 ### Supported/tested devices:
 Bluetooth:
@@ -28,6 +28,9 @@ Bluetooth:
 ## Ability of this repository
 The script only tested with python 3.7 and 3.8.
 ### Supported/tested devices:
+Bluetooth BLE: 
+- Smart Shunt
+
 Bluetooth:
 - Smart Shunt
 - Smart Solar 100/30
@@ -35,12 +38,14 @@ Bluetooth:
 
 Serial:
 - Phoenix Inverter 12 800VA 230V
+- Smart Shunt
+- Smart Solar 100/30
 
 ### Outputs
 - mqtt
 - syslog
 
-### Autostart scripts
+### Autostart scripts (systemd)
 These scripts are written for my specific config file. If you have your devices in different order, you may need to adjust them.
 
 ## Howto use
@@ -55,6 +60,12 @@ Start the script for your desired device: `python3 victron.py -d 0`
 There are some more commandline arguments, you can view them with `python3 victron.py --help`
 
 ## Known issues
-- The bluetooth part have sometimes trouble to connect or just crashes. But systemd will restart the process automatically. I don't know why this happens and I don't know if it is a problem with this code or the gatt linux library. If you want to debug: Fell free!
-- Orion Smart is not yet rewritten to the new classes and may not work correctly
-- From smart solar you can't get the history values. The protocol itself is decoded (and working) for this part, but the smart solar doesn't send the data. I guess we need to send another init sequence. I didn't figure out the corrent sequence yet!
+- Orion Smart must be more reverse engineered to get some more interesting values
+- Bluetooth: From smart solar you can't get the history values. The protocol itself is decoded (and working) for this part, but the smart solar doesn't send the data. I guess we need to send another init sequence. I didn't figure out the corrent sequence yet!
+- Serial: Smart Solar history currently not gathered
+
+## Future Plans:
+- Choose via config file which values should be printed
+- Choose how often values should be printed (especially bluettooth with notifications)
+- CMD Parameter instead of config (easier testing of new devices)
+- SmartSolar history values
