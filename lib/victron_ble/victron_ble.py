@@ -16,6 +16,8 @@ class VictronBle:
         if self.device_config['type'] == 'smartshunt':
             from lib.victron_ble.victron_smartshunt_ble import SmartshuntBLE
             self.victron_device = SmartshuntBLE(self.device_config)
+        else:
+            logger.error(f'Got unknown type ({self.device_config["type"]}) from config!')
 
     def get_device_info(self):
         pass

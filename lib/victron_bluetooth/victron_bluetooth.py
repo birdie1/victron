@@ -178,6 +178,8 @@ class VictronBluetooth:
         if self.device_config['type'] == 'smartshunt':
             from lib.victron_bluetooth.victron_smartshunt import Smartshunt
             self.victron_device = Smartshunt(self.device_config)
+        else:
+            logger.error(f'Got unknown type ({self.device_config["type"]}) from config!')
 
     def get_device_info(self):
         pass

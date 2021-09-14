@@ -16,6 +16,8 @@ class VictronSerial:
         elif self.device_config['type'] == 'smartsolar':
             from lib.victron_serial.victron_smartsolar import Smartsolar
             self.victron_device = Smartsolar(self.device_config['name'], self.device_config['port'])
+        else:
+            logger.error(f'Got unknown type ({self.device_config["type"]}) from config!')
 
     def get_device_info(self):
         return self.victron_device.get_device_info()
