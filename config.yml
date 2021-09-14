@@ -2,8 +2,12 @@
 #devices:
 #    - name: Shunt1
 #      type: smartshunt
-#      protocol: bluetooth
+#      protocol: bluetooth-ble
 #      mac: fd:d4:50:0f:6c:1b
+#    - name: Solar1
+#      type: smartsolar
+#      protocol: bluetooth
+#      mac: F9:8E:1C:EC:9C:72
 #    - name: Phoenix1
 #      type: pheonix
 #      protocol: serial
@@ -12,38 +16,23 @@
 devices:
     - name: Shunt1
       type: smartshunt
-      protocol: bluetooth
-      mac: fd:d4:50:0f:6c:1b
-    - name: Solar1
-      type: smartsolar
-      protocol: bluetooth
-      mac: F9:8E:1C:EC:9C:72
-    - name: Orion1
-      type: orionsmart
-      protocol: bluetooth
-      mac: E7:79:E6:1D:EF:04
-    - name: Phoenix1
-      type: phoenix
-      protocol: serial
-      port: /dev/ttyUSB0
-    - name: Shunt1
-      type: smartshunt
       protocol: bluetooth-ble
       mac: fd:d4:50:0f:6c:1b
 
-# timer (in seconds)
+# timer (in seconds) IN DEVELOPMENT!
 #
 #
 # repeat: 60
 #   - Will be used only if run programm in default time mode (Disconnection from device after collection is finished)
 #   - It repeats connecting after given time, regardless at which time it was disconnected
 #
-timer:
-    connected: 30  # timer how long the device is connected
-    disconnected: 120 # timer at which time the device is connected again after disconnect # during dev. for prod: 2 * 60
-    repeat: 180
-    retry: 60
-    serial: 30  # timer how long serial data mining will sleep (data can be gathered every second)
+#timer:
+#    connected: 30  # timer how long the device is connected
+#    disconnected: 120 # timer at which time the device is connected again after disconnect # during dev. for prod: 2 * 60
+#    repeat: 180
+#    retry: 60
+#    serial: 30  # timer how long serial data mining will sleep (data can be gathered every second)
+
 
 ## Logging:
 ## possible values:
@@ -56,40 +45,76 @@ mqtt:
     host: 192.168.3.2
     port: 1883
     base_topic: victron
+    hass: True
 
 # Collected enitites by device type:
 # If you change this, the names must be the same like in the value tables from victron.py
 # These are the needed values to send a collection to logger, if other values are gathered (Usually they are from time to time), they are added to the collection too
 collections:
   smartshunt:
-    product:
-      - Serial
+    device:
+      - Product ID
       - Firmware Version
-      - Udf version
     battery:
-      - Charge Status
-      - Time to go
+      - State Of Charge
+      - Time To Go
     latest:
       - Voltage
       - Current
       - Power
-      - Starter
+      - Starter Battery Voltage
+      - Used Energy
     history:
       - Deepest Discharge
       - Last Discharge
       - Average Discharge
       - Cumulative Ah Drawn
       - Time Since Last Full
-  smartsolar:
+      - Charge Cycles
+      - Full Discharges
+      - Battery Voltage min
+      - Battery Voltage max
+      - Synchonisations
+      - Alarm Voltage low
+      - Alarm Voltage high
+      - Starter Battery Voltage min
+      - Starter Battery Voltage max
+      - Total Discharged Energy
+      - Total Charged Energy
+  phoenix:
+    device:
+      - Product ID
+      - Serial
+      - Firmware
+      - Production Date
     latest:
       - Voltage
-      - SmartSolar Power
-      - SmartSolar Solar Voltage
-      - SmartSolar Solar Current
-      - SmartSolar Battery Current
+      - AC Voltage
+      - AC Current
+      - Mode
+      - Status
+      - Warning
+      - Alarm Reason
+  smartsolar:
+    device:
+      - Day sequence Number (0..364)
+      - Product ID
+      - Serial
+      - Firmware
+      - Production Date
+    latest:
+      - Voltage
+      - Current
+      - Voltage Panel
+      - Power
+      - Status
+      - MPPT Tracker Operation Mode
+      - Off Reason
+      - Virtual Load Output
+      - Error Code
     history:
-      - Battery Voltage Max
-      - Battery Voltage Min
-      - Total Work
-      - Solar Power Max
-      - Solar Voltage Max
+      - Energy All Time
+      - Energy Today
+      - Energy Today Max
+      - Energy Yesterday
+      - Energy Yesterday Max
