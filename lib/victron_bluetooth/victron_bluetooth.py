@@ -184,11 +184,30 @@ class VictronBluetooth:
         else:
             logger.error(f'Got unknown type ({self.device_config["type"]}) from config!')
 
-    def get_device_info(self):
-        pass
+    @staticmethod
+    def get_device_info():
+        pid = "Currently not available via Bluetooth"
+        ser = "Currently not available via Bluetooth"
+        fw = "Currently not available via Bluetooth"
+        return pid, ser, fw
 
     def get_mapping_table(self):
-        pass
+        hass_mapping_table = {}
+        for i in self.victron_device.get_mapping_table():
+            if self.device_config['type'] == 'orionsmart':
+                if i in ORION_VALUE_NAMES:
+                    hass_mapping_table.update({i: ORION_VALUE_NAMES[i]})
+                elif i in ORION_SETTINGS_NAMES:
+                    hass_mapping_table.update({i: ORION_SETTINGS_NAMES[i]})
+            else:
+                if i in MIXED_SETTINGS_NAMES:
+                    hass_mapping_table.update({i: MIXED_SETTINGS_NAMES[i]})
+                elif i in HISTORY_VALUE_NAMES:
+                    hass_mapping_table.update({i: HISTORY_VALUE_NAMES[i]})
+                elif i in VALUE_VALUE_NAMES:
+                    hass_mapping_table.update({i: VALUE_VALUE_NAMES[i]})
+
+        return hass_mapping_table
 
     def finished_target(self):
         self.gatt_device.disconnect()

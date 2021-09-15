@@ -19,11 +19,15 @@ class VictronBle:
         else:
             logger.error(f'Got unknown type ({self.device_config["type"]}) from config!')
 
-    def get_device_info(self):
-        pass
+    @staticmethod
+    def get_device_info():
+        pid = "Currently not available via BLE"
+        ser = "Currently not available via BLE"
+        fw = "Currently not available via BLE"
+        return pid, ser, fw
 
     def get_mapping_table(self):
-        pass
+        return self.victron_device.get_mapping_table()
 
     def finished_target(self):
         self.gatt_device.disconnect()

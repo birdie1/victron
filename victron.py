@@ -56,10 +56,12 @@ def output_syslog(device, category, value):
 def output_mqtt(device_name, subtopic, value, hass_config=False):
     global client
     global config
+    retain = False
 
     if hass_config:
         pub = subtopic
         data = value
+        retain = True
     else:
         if value == "":
             pub = f'{config["mqtt"]["base_topic"]}/{device_name}'
@@ -71,7 +73,7 @@ def output_mqtt(device_name, subtopic, value, hass_config=False):
             else:
                 data = value
 
-    client.publish(pub, data)
+    client.publish(pub, data, retain=retain)
 
 
 def get_helper_string_device(devices):

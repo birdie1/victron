@@ -2,6 +2,8 @@ from lib.victron_bluetooth.victron_gatt import gatt_device_instance
 
 
 class Smartsolar:
+    HASS_MAPPING_TABLE = [0x8F, 0xBC, 0xBD, 0xBB]
+
     ping = [
         ("0024", "0300"),
         ("0021", "f941"),  # taken from phoenix, sends power & current
@@ -55,6 +57,9 @@ class Smartsolar:
     def __init__(self, config):
         self.config = config
         self.gatt_device = None
+
+    def get_mapping_table(self):
+        return self.HASS_MAPPING_TABLE
 
     def get_gatt_device_instance(self, manager, handle_single_value, handle_bulk_values, connect_error_target):
         UUID_FUNCTION_TABLE = {

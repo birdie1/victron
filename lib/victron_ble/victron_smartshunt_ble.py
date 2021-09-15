@@ -25,7 +25,7 @@ class SmartshuntBLE:
     #'6597eeff-4bda-4c1e-af4b-551c4cf74769': ("Latest", "Consumed Ah", "Ah", 10, True, convert_value_number),
     # This one exists as well, but we dont need it:
     # '6597ffff-4bda-4c1e-af4b-551c4cf74769': ("Special", "Keep-alive", "s", 1000, False, lib.helper.convert_value_number),
-    VALUE_NAMES = {
+    MAP = {
         '6597eeff-4bda-4c1e-af4b-551c4cf74769': ("Latest", "Used Energy", "Ah", 10, True, lib.helper.convert_value_number),
         '6597ed8e-4bda-4c1e-af4b-551c4cf74769': ("Latest", "Power", "W", 1, True, lib.helper.convert_value_number),
         '6597ed8d-4bda-4c1e-af4b-551c4cf74769': ("Latest", "Voltage", "V", 100, True, lib.helper.convert_value_number),
@@ -53,6 +53,9 @@ class SmartshuntBLE:
         self.config = config
         self.count_values = 0
 
+    def get_mapping_table(self):
+        return self.MAP
+
     def get_gatt_device_instance(self, manager, handle_value_function, connect_error_target):
         return gatt_device_instance(
             manager,
@@ -73,15 +76,15 @@ class SmartshuntBLE:
         :return: Boolean: If last expected device and a disconnect could follow
         """
 
-        if characteristic.uuid not in self.VALUE_NAMES.keys():
+        if characteristic.uuid not in self.MAP.keys():
             logger.warning(f'{self.config["name"]}: Characteristic ({characteristic.uuid}) not found in known Table')
         else:
             self.count_values += 1
-            command = self.VALUE_NAMES[characteristic.uuid]
+            command = self.MAP[characteristic.uuid]
             result_value = command[5](data, command)
             output(command[1], result_value)
 
-        if self.count_values == len(self.VALUE_NAMES):
+        if self.count_values == len(self.MAP):
             logger.info(f'{self.config["name"]}: Gathering data successful')
             return True
         else:

@@ -26,19 +26,6 @@ class Victron:
         if self.device_config['protocol'] == 'serial':
             from lib.victron_serial.victron_serial import VictronSerial
             self.victron_type = VictronSerial(device_config)
-
-            if self.config['mqtt']['hass']:
-                pid, ser, fw = self.victron_type.get_device_info()
-                mapping_table = self.victron_type.get_mapping_table()
-                helper.send_hass_config_payload(self.device_config['name'],
-                                                pid,
-                                                ser,
-                                                fw,
-                                                mapping_table,
-                                                self.config['mqtt']['base_topic'],
-                                                self.given_output,
-                                                self.collections)
-
         elif self.device_config['protocol'] == 'bluetooth-ble':
             from lib.victron_ble.victron_ble import VictronBle
             self.victron_type = VictronBle(device_config)
@@ -48,6 +35,18 @@ class Victron:
 
         if self.victron_type is None:
             logger.error(f"{self.device_config['name']}: Missing or unknown device type")
+
+        if self.config['mqtt']['hass']:
+            pid, ser, fw = self.victron_type.get_device_info()
+            mapping_table = self.victron_type.get_mapping_table()
+            helper.send_hass_config_payload(self.device_config['name'],
+                                            pid,
+                                            ser,
+                                            fw,
+                                            mapping_table,
+                                            self.config['mqtt']['base_topic'],
+                                            self.given_output,
+                                            self.collections)
 
     def read(self):
         self.victron_type.read(self.output)

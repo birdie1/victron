@@ -2,6 +2,9 @@ from lib.victron_bluetooth.victron_gatt import gatt_device_instance
 
 
 class Smartshunt:
+    HASS_MAPPING_TABLE = [0xFE, 0xFF, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0E,
+                          0x0F, 0x10, 0x11, 0x8C, 0x8D, 0x8E, 0x7D]
+
     ping = [
         ("0024", "0300"),
         ("0021", "f941"),  # taken from phoenix, sends power & current
@@ -27,6 +30,9 @@ class Smartshunt:
     def __init__(self, config):
         self.config = config
         self.gatt_device = None
+
+    def get_mapping_table(self):
+        return self.HASS_MAPPING_TABLE
 
     def get_gatt_device_instance(self, manager, handle_single_value, handle_bulk_values, connect_error_target):
         UUID_FUNCTION_TABLE = {

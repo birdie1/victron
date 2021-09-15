@@ -2,6 +2,8 @@ from lib.victron_bluetooth.victron_gatt import gatt_device_instance
 
 
 class OrionSmart:
+    HASS_MAPPING_TABLE = [0x36, 0x37, 0x38, 0x39, 0xBB, 0xE9]
+
     ping = [
         ("0024", "0300"),
         ("0021", "f941"),  # taken from phoenix, sends power & current
@@ -120,6 +122,9 @@ class OrionSmart:
     def __init__(self, config):
         self.config = config
         self.gatt_device = None
+
+    def get_mapping_table(self):
+        return self.HASS_MAPPING_TABLE
 
     def get_gatt_device_instance(self, manager, handle_single_value, handle_bulk_values, connect_error_target):
         UUID_FUNCTION_TABLE = {

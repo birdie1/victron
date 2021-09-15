@@ -59,12 +59,97 @@ Start the script for your desired device: `python3 victron.py -d 0`
 
 There are some more commandline arguments, you can view them with `python3 victron.py --help`
 
+### Configuration in detail
+#### Device section
+**Mandatory:**
+Name, Type, Protocol and (MAC or serialport) depending of the type. bluetooth and bluetooth-ble need to have the bluetooth mac adress of the victron device specified.
+<br>
+Name: Choose yourself<br>
+Type: phoenix, smartshunt, smartsolar, orionsmart<br>
+Protocol: serial, bluetooth, bluetooth-ble
+```buildoutcfg
+    - name: Phoenix1
+      type: phoenix
+      protocol: serial
+      port: /dev/victron-phoenix
+```
+or
+```buildoutcfg
+    - name: Shunt1
+      type: smartshunt
+      protocol: bluetooth-ble
+      mac: fd:d4:50:0f:6c:1b
+```
+or
+```buildoutcfg
+    - name: Solar1
+      type: smartsolar
+      protocol: bluetooth
+      mac: F9:8E:1C:EC:9C:72
+```
+**Optional:**
+
+
+#### Output section
+You can choose between:
+```buildoutcfg
+logger: mqtt
+```
+or 
+```buildoutcfg
+logger: syslog
+```
+#### MQTT section
+Choose host, port, base_topic and if you want to use HomeAssistant Discovery (Yet only supported on serial devices). SSL and authentication will be added later.
+```buildoutcfg
+mqtt:
+    host: 192.168.3.2
+    port: 1883
+    base_topic: victron
+    hass: True
+```
+#### Collections section
+You can specify if you want the values get summarized into one json output statement. Otherwise it will send out every value as soon as it is collected from victron device. 
+```buildoutcfg
+collections:
+  smartshunt:
+    device:
+      - Product ID
+      - Firmware Version
+    battery:
+      - State Of Charge
+      - Time To Go
+    latest:
+      - Voltage
+      - Current
+      - Power
+      - Starter Battery Voltage
+      - Used Energy
+    history:
+      - Deepest Discharge
+      - Last Discharge
+      - Average Discharge
+      - Cumulative Ah Drawn
+      - Time Since Last Full
+      - Charge Cycles
+      - Full Discharges
+      - Battery Voltage min
+      - Battery Voltage max
+      - Synchonisations
+      - Alarm Voltage low
+      - Alarm Voltage high
+      - Starter Battery Voltage min
+      - Starter Battery Voltage max
+      - Total Discharged Energy
+      - Total Charged Energy
+  ...
+```
 ## Known issues
 - Orion Smart must be more reverse engineered to get some more interesting values
 - Bluetooth: From smart solar you can't get the history values. The protocol itself is decoded (and working) for this part, but the smart solar doesn't send the data. I guess we need to send another init sequence. I didn't figure out the corrent sequence yet!
 - Serial: Smart Solar history currently not gathered
 
-## Future Plans:
+## Future xlans:
 - Choose via config file which values should be printed
 - Choose how often values should be printed (especially bluettooth with notifications)
 - CMD Parameter instead of config (easier testing of new devices)
