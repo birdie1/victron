@@ -175,10 +175,10 @@ class VictronBluetooth:
         if self.device_config['type'] == 'smartsolar':
             from lib.victron_bluetooth.victron_smartsolar import Smartsolar
             self.victron_device = Smartsolar(self.device_config)
-        if self.device_config['type'] == 'smartshunt':
+        elif self.device_config['type'] == 'smartshunt':
             from lib.victron_bluetooth.victron_smartshunt import Smartshunt
             self.victron_device = Smartshunt(self.device_config)
-        if self.device_config['type'] == 'orionsmart':
+        elif self.device_config['type'] == 'orionsmart':
             from lib.victron_bluetooth.victron_orionsmart import OrionSmart
             self.victron_device = OrionSmart(self.device_config)
         else:
