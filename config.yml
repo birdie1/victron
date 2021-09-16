@@ -38,6 +38,7 @@ devices:
 ## possible values:
 ##    - syslog
 ##    - mqtt
+##    - print
 logger: mqtt
 
 ## If logging is set to mqtt, these values must be filled

@@ -1,6 +1,6 @@
 # VictronConnect Bluetooth & Serial
 
-**This repository is in no way approved by or afiliated with the official Victron Energy repository.**
+**This repository is in no way approved by or affiliated with the official Victron Energy repository.**
 **I am not responsible for any problems or damages with your devices or this code**
 
 **Only run this script if you are sure you know what you are doing!**
@@ -8,7 +8,7 @@
 This repository is based on [https://github.com/vvvrrooomm/victron](https://github.com/vvvrrooomm/victron).
 
 I use this repository to have a running version with mqtt for my camping car.
-If you want more information about the development and a wireshard dissector, refer to vvvrrooomm's repository.
+If you want more information about the development and a wireshark dissector, refer to vvvrrooomm's repository.
 
 ## New version for the new bluetooth gatt api used in the beta firmware of the SmartShunt
 See [https://community.victronenergy.com/questions/93919/victron-bluetooth-ble-protocol-publication.html](https://community.victronenergy.com/questions/93919/victron-bluetooth-ble-protocol-publication.html)
@@ -18,15 +18,8 @@ The new script connect, gathering the data once and then disconnect on Bluetooth
 
 More features will be added soon. 
 
-### Supported/tested devices:
-Bluetooth:
-- Smart Shunt
-### Outputs
-- mqtt
-- syslog
-
 ## Ability of this repository
-The script only tested with python 3.7 and 3.8.
+The script is tested with python > 3.7
 ### Supported/tested devices:
 Bluetooth BLE: 
 - Smart Shunt
@@ -44,6 +37,7 @@ Serial:
 ### Outputs
 - mqtt
 - syslog
+- print
 
 ### Autostart scripts (systemd)
 These scripts are written for my specific config file. If you have your devices in different order, you may need to adjust them.
@@ -149,7 +143,7 @@ collections:
 - Bluetooth: From smart solar you can't get the history values. The protocol itself is decoded (and working) for this part, but the smart solar doesn't send the data. I guess we need to send another init sequence. I didn't figure out the corrent sequence yet!
 - Serial: Smart Solar history currently not gathered
 
-## Future xlans:
+## Future plans:
 - Choose via config file which values should be printed
 - Choose how often values should be printed (especially bluettooth with notifications)
 - CMD Parameter instead of config (easier testing of new devices)

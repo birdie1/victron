@@ -31,7 +31,6 @@ handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.INFO)
 formatter = logging.Formatter(logger_format)
 handler.setFormatter(formatter)
-logger.addHandler(handler)
 
 
 def victron_thread(thread_count, config, vdevice_config, thread_q):
@@ -40,15 +39,18 @@ def victron_thread(thread_count, config, vdevice_config, thread_q):
     v.read()
 
 
-def output_syslog(device, category, value):
-    #print(f"{device}|{category}:{value}", file=sys.stderr)
+def output_print(device_name, category, value):
+    print(f'{device_name}|{category}:{value}')
+
+
+def output_syslog(device_name, category, value):
     subprocess.run(
         [
             "/usr/bin/logger",
             f"--id={os.getpid()}",
             "-t",
             "victron",
-            f"{device}|{category}:{value}",
+            f"{device_name}|{category}:{value}",
         ]
     )
 
@@ -132,16 +134,23 @@ if __name__ == "__main__":
     #config['direct_disconnect'] = args.direct_disconnect
 
     if config['logger'] == 'mqtt':
-        import paho.mqtt.client as mqtt
+        logger.addHandler(handler)
 
+        import paho.mqtt.client as mqtt
         client = mqtt.Client()
         client.connect(config['mqtt']['host'], config['mqtt']['port'], 60)
-
         client.loop_start()
 
         output = output_mqtt
     elif config['logger'] == 'syslog':
+        logger.addHandler(handler)
         output = output_syslog
+    elif config['logger'] == 'print':
+        output = output_print
+    else:
+        logger.addHandler(handler)
+        logger.error('No output specified!')
+        sys.exit(1)
 
     q = queue.Queue()
 
