@@ -34,7 +34,7 @@ class Smartshunt:
     def get_mapping_table(self):
         return self.HASS_MAPPING_TABLE
 
-    def get_gatt_device_instance(self, manager, handle_single_value, handle_bulk_values, connect_error_target):
+    def get_gatt_device_instance(self, manager, handle_single_value, handle_bulk_values, options):
         UUID_FUNCTION_TABLE = {
             self.handle_uuid_map["0027"]: handle_bulk_values,
             self.handle_uuid_map["0024"]: handle_single_value,
@@ -49,7 +49,7 @@ class Smartshunt:
             handle_uuid_map=self.handle_uuid_map,
             name=self.config['name'],
             init_sequence_template=self.init_sequence_template,
-            connect_error_target=connect_error_target,
+            options=options,
         )
         return self.gatt_device
 

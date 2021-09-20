@@ -34,7 +34,7 @@ class AnyDevice(gatt.Device):
         ping,
         handle_uuid_map,
         init_sequence_template,
-        connect_error_target
+        options
     ):
         super().__init__(mac_address, manager, managed=True)
         self.notification_table = notification_table
@@ -43,14 +43,13 @@ class AnyDevice(gatt.Device):
         self.handle_uuid_map = handle_uuid_map
         self.name = name
         self.init_sequence_template = init_sequence_template
-        self.connect_error_target = connect_error_target
+        self.options = options
 
     def connect_succeeded(self):
         super().connect_succeeded()
         logger.info(f"{self.name}: Connected!")
         self.connected = True
         time.sleep(0)
-
 
     def connect_failed(self, error):
         super().connect_failed(error)
@@ -62,6 +61,7 @@ class AnyDevice(gatt.Device):
         super().disconnect_succeeded()
         logger.info(f"{self.name}: Disconnected!")
         time.sleep(0)
+        self.manager.stop()
 
     def services_resolved(self):
         super().services_resolved()
@@ -178,7 +178,7 @@ class AnyDevice(gatt.Device):
         logger.debug(f"{self.name}: send ping done")
 
 
-def gatt_device_instance(manager, mac, name, notification_table, ping, handle_uuid_map, init_sequence_template, connect_error_target):
+def gatt_device_instance(manager, mac, name, notification_table, ping, handle_uuid_map, init_sequence_template, options):
     return AnyDevice(
         mac,
         name,
@@ -187,5 +187,5 @@ def gatt_device_instance(manager, mac, name, notification_table, ping, handle_uu
         ping=ping,
         handle_uuid_map=handle_uuid_map,
         init_sequence_template=init_sequence_template,
-        connect_error_target=connect_error_target
+        options=options
     )

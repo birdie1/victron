@@ -4,6 +4,7 @@ import logging
 import time
 import lib.helper
 from collections import namedtuple
+from datetime import datetime, timedelta
 from enum import IntEnum
 
 logger = logging.getLogger()
@@ -82,7 +83,7 @@ VALUE_VALUE_NAMES = {
     0x8D: ("Latest", "Voltage", "V", 100, False, lib.helper.convert_value_number),
     0x8E: ("Latest", "Power", "W", 1.0, True, lib.helper.convert_value_number),
     0x7D: ("Latest", "Starter", "V", 100, True, lib.helper.convert_value_number),
-    0x8F: ("Latest", "SmartSolar Battery Current", "A", 10, True, lib.helper.convert_value_number),
+    0x8F: ("Latest", "Network Battery Current", "A", 10, True, lib.helper.convert_value_number),
     0xBC: ("Latest", "SmartSolar Power", "W", 100, True, lib.helper.convert_value_number),
     0xBD: ("Latest", "SmartSolar Solar Current", "A", 10, True, lib.helper.convert_value_number),
     0xBB: ("Latest", "SmartSolar Solar Voltage", "V", 100, True, lib.helper.convert_value_number),
@@ -131,6 +132,7 @@ VARLEN_CATEGORY_LOOKUP = {
     0x01190308: ("Product Info", PRODUCT_INFO_NAMES),
     0x03190308: ("history values", HISTORY_VALUE_NAMES),
     0x10190308: ("settings valu", SETTINGS_AND_SOLAR_HISTORY_VALUE_NAMES),
+    0xEC190308: ("UKNNOWN", VALUE_VALUE_NAMES),
     0xED190308: ("values values", VALUE_VALUE_NAMES),
     0x0F190308: ("mixed settings", MIXED_SETTINGS_NAMES),
     0x01190008: ("Orion Values UKNNOWN", ORION_VALUE_NAMES),
@@ -165,11 +167,11 @@ SOLAR_HISTORY_VALUES = [
 
 
 class VictronBluetooth:
-    def __init__(self, device_config):
+    def __init__(self, device_config, output):
         self.device_config = device_config
         self.victron_device = None
         self.gatt_device = None
-        self.output = None
+        self.output = output
         self.buffer = bytearray()
 
         if self.device_config['type'] == 'smartsolar':
@@ -214,42 +216,58 @@ class VictronBluetooth:
         logger.debug(f'{self.device_config["name"]}: Thread finished')
         manager.stop()
 
-    def read(self, output):
-        self.output = output
-
-        self.gatt_device = self.victron_device.get_gatt_device_instance(
-            manager,
-            self.handle_single_value,
-            self.handle_bulk_values,
-            self.finished_target
-        )
-
+    def connect_loop(self):
         manager.start_discovery()
-        time.sleep(2)
+        time.sleep(1)
 
-        # TODO: Stuff like reconnecting after time
         try:
             logger.info(f'{self.device_config["name"]}: Connecting...')
             self.gatt_device.connect()
         except:
-            logger.error(f"{self.device_config['name']}: failed to connect. Trying again shortly.")
+            logger.error(f'{self.device_config["name"]}: failed to connect. Trying again shortly.')
+            return False
+        finally:
+            manager.stop_discovery()
 
-        manager.stop_discovery()
         manager.run()
+
+        if self.gatt_device.connected:
+            return True
+        else:
+            return False
+
+    def connect_disconnect_loop(self, args, timer):
+        options = {}
+        self.gatt_device = self.victron_device.get_gatt_device_instance(
+            manager,
+            self.handle_single_value,
+            self.handle_bulk_values,
+            options
+        )
+
+        while True:
+            if self.connect_loop():
+                #if args.direct_disconnect:
+
+                next_time = datetime.now() + timedelta(seconds=timer['bluetooth']['disconnected'])
+                logger.debug(f'{self.device_config["name"]}: Will reconnect at {next_time}')
+                time.sleep(timer['bluetooth']['disconnected'])
+            else:
+                time.sleep(timer['retry'])
+
 
     def handle_bulk_values(self, value):
         self.buffer.extend(value)
-
         pos = self.start_of_packet(self.buffer)
         while len(self.buffer) > 0 and pos >= 0:
             consumed = self.handle_one_value(self.buffer[pos:])
             if consumed == -1:
                 logger.debug(f'UNRECOGNIZED DATA: {self.device_config["name"]}: bulk: need more bytes')
                 return
-            buffer = self.buffer[pos + consumed:]
+            self.buffer = self.buffer[pos + consumed:]
             pos = self.start_of_packet(self.buffer)
             if pos > 0:  # TODO BUG: midnight hacking
-                unknown = buffer[:pos]
+                unknown = self.buffer[:pos]
                 logger.debug(f'UNRECOGNIZED DATA: {self.device_config["name"]}: unknown value in bulk: {unknown}')
 
     def handle_single_value(self, value):
@@ -371,21 +389,6 @@ class VictronBluetooth:
 
             logger.debug(f'{self.device_config["name"]}: Collected {value_name} -> {value}')
             self.output(value_name, value)
-            #else:
-            #    # Set collection value and check if collection is ready
-            #
-            #    col_key = set_value_in_collections(device, device_name, value_name, value)
-            #    if not col_key:
-            #        logger.debug(f'{device_name}: {value_name} not in any collections, it will never be published')
-            #    else:
-            #        if collection_check_full(device.collections[col_key]):
-            #            logger.info(f'Collection is full, sending data via {device.config["logger"]}')
-            #            logger.debug(f'{device_name}: Collection:  {json.dumps(device.collections[col_key])}')
-            #            output(device_name, col_key, device.collections[col_key])
-            #
-            #            device.reset_collection(col_key)
-            #            if config['direct_disconnect']:
-            #                disconnect_loop(device.gatt_device)
 
         consumed += used
 

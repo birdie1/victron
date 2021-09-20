@@ -25,13 +25,13 @@ class Victron:
 
         if self.device_config['protocol'] == 'serial':
             from lib.victron_serial.victron_serial import VictronSerial
-            self.victron_type = VictronSerial(device_config)
+            self.victron_type = VictronSerial(device_config, self.output)
         elif self.device_config['protocol'] == 'bluetooth-ble':
             from lib.victron_ble.victron_ble import VictronBle
-            self.victron_type = VictronBle(device_config)
+            self.victron_type = VictronBle(device_config, self.output)
         elif self.device_config['protocol'] == 'bluetooth':
             from lib.victron_bluetooth.victron_bluetooth import VictronBluetooth
-            self.victron_type = VictronBluetooth(device_config)
+            self.victron_type = VictronBluetooth(device_config, self.output)
 
         if self.victron_type is None:
             logger.error(f"{self.device_config['name']}: Missing or unknown device type")
@@ -48,8 +48,8 @@ class Victron:
                                             self.given_output,
                                             self.collections)
 
-    def read(self):
-        self.victron_type.read(self.output)
+    def connect_disconnect_loop(self):
+        self.victron_type.connect_disconnect_loop(self.cmd, self.config['timer'])
 
     def reset_collection(self, collection_name):
         collection = {}

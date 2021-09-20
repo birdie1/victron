@@ -126,7 +126,7 @@ class OrionSmart:
     def get_mapping_table(self):
         return self.HASS_MAPPING_TABLE
 
-    def get_gatt_device_instance(self, manager, handle_single_value, handle_bulk_values, connect_error_target):
+    def get_gatt_device_instance(self, manager, handle_single_value, handle_bulk_values, options):
         UUID_FUNCTION_TABLE = {
             self.handle_uuid_map["0025"]: handle_single_value,
             self.handle_uuid_map["001b"]: handle_single_value,
@@ -143,7 +143,7 @@ class OrionSmart:
             handle_uuid_map=self.handle_uuid_map,
             name=self.config['name'],
             init_sequence_template=self.init_sequence_template,
-            connect_error_target=connect_error_target,
+            options=options,
         )
 
     def init_sequence_template(self):

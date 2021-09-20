@@ -1,10 +1,13 @@
 import logging
+import time
 
 logger = logging.getLogger()
 
+
 class VictronSerial:
-    def __init__(self, device_config):
+    def __init__(self, device_config, output):
         self.device_config = device_config
+        self.output = output
         self.victron_device = None
 
         if self.device_config['type'] == 'phoenix':
@@ -26,8 +29,13 @@ class VictronSerial:
         return self.victron_device.get_mapping_table()
 
     def finished_target(self):
-        logger.debug(f'{self.device_config["name"]}: Thread {self.thread_count} finished')
+        logger.debug(f'{self.device_config["name"]}: Finished')
 
-    def read(self, output):
-        self.victron_device.get_data(output)
-        self.finished_target()
+    def connect_disconnect_loop(self, args, timer):
+        while True:
+            self.victron_device.get_data(self.output)
+
+            if args.direct_disconnect:
+                self.finished_target()
+            else:
+                time.sleep(timer['serial']['repeat'])

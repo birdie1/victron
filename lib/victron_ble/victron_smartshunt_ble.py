@@ -56,7 +56,7 @@ class SmartshuntBLE:
     def get_mapping_table(self):
         return self.MAP
 
-    def get_gatt_device_instance(self, manager, handle_value_function, connect_error_target):
+    def get_gatt_device_instance(self, manager, handle_value_function, options):
         return gatt_device_instance(
             manager,
             self.config['mac'],
@@ -64,7 +64,7 @@ class SmartshuntBLE:
             keep_alive=self.keep_alive_handle_uuid_map,
             handle_uuid_map=self.read_handle_uuid_map,
             name=self.config['name'],
-            connect_error_target=connect_error_target,
+            options=options
         )
 
     def handle_one_value(self, output, characteristic, data):

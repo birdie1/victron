@@ -25,7 +25,7 @@ class AnyDevice(gatt.Device):
         handle_value_function,
         keep_alive,
         handle_uuid_map,
-        connect_error_target
+        options
     ):
         super().__init__(mac_address, manager, managed=True)
         self.handle_value_function = handle_value_function
@@ -33,7 +33,7 @@ class AnyDevice(gatt.Device):
         self.keep_alive = keep_alive
         self.handle_uuid_map = handle_uuid_map
         self.name = name
-        self.connect_error_target = connect_error_target
+        self.options = options
 
     def connect_succeeded(self):
         super().connect_succeeded()
@@ -45,20 +45,20 @@ class AnyDevice(gatt.Device):
         super().connect_failed(error)
         logger.error(f"{self.name}: Connection failed: {str(error)}!")
         self.connected = False
-        self.connect_error_target()
         time.sleep(0)
 
     def disconnect_succeeded(self):
         super().disconnect_succeeded()
         logger.info(f"{self.name}: Disconnect successful!")
         time.sleep(0)
+        self.manager.stop()
 
     def characteristic_write_value_succeeded(self, characteristic):
         logger.debug(f"{self.name}: write succeeded")
         time.sleep(0)
 
     def characteristic_write_value_failed(self, characteristic, error):
-        logger.warning(f"write failed on charactersitic {characteristic.uuid} | merror: {error}")
+        logger.warning(f"write failed on characteristic {characteristic.uuid} | merror: {error}")
         time.sleep(0)
 
     def services_resolved(self):
@@ -86,7 +86,7 @@ class AnyDevice(gatt.Device):
                 service.write_value("60ea")
 
 
-def gatt_device_instance(manager, mac, name, handle_value_function, keep_alive, handle_uuid_map, connect_error_target):
+def gatt_device_instance(manager, mac, name, handle_value_function, keep_alive, handle_uuid_map, options):
     return AnyDevice(
         mac,
         name,
@@ -94,8 +94,5 @@ def gatt_device_instance(manager, mac, name, handle_value_function, keep_alive, 
         handle_value_function=handle_value_function,
         keep_alive=keep_alive,
         handle_uuid_map=handle_uuid_map,
-        connect_error_target=connect_error_target
+        options=options,
     )
-
-
-

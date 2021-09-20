@@ -20,19 +20,15 @@ devices:
       mac: fd:d4:50:0f:6c:1b
 
 # timer (in seconds) IN DEVELOPMENT!
-#
-#
-# repeat: 60
-#   - Will be used only if run programm in default time mode (Disconnection from device after collection is finished)
-#   - It repeats connecting after given time, regardless at which time it was disconnected
-#
-#timer:
-#    connected: 30  # timer how long the device is connected
-#    disconnected: 120 # timer at which time the device is connected again after disconnect # during dev. for prod: 2 * 60
-#    repeat: 180
-#    retry: 60
-#    serial: 30  # timer how long serial data mining will sleep (data can be gathered every second)
-
+timer:
+    retry: 15
+    bluetooth:
+        connected: 60,
+        disconnected: 60
+    bluetooth-ble:
+        repeat: 60
+    serial:
+        repeat: 30
 
 ## Logging:
 ## possible values:

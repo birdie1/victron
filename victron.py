@@ -36,7 +36,7 @@ handler.setFormatter(formatter)
 def victron_thread(thread_count, config, vdevice_config, thread_q):
     from lib.victron import Victron
     v = Victron(config, vdevice_config, output, args, thread_count, thread_q)
-    v.read()
+    v.connect_disconnect_loop()
 
 
 def output_print(device_name, category, value):
@@ -86,18 +86,22 @@ def get_helper_string_device(devices):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Victron Reader (Bluetooth or Serial) \n\n"
+    parser = argparse.ArgumentParser(description="Victron Reader (Bluetooth, BLE and Serial) \n\n"
                                                  "Current supported devices:\n"
                                                  "  Full: \n" 
+                                                 "    - Smart Shunt (Bluetooth BLE)\n"
                                                  "    - Phoenix Inverter (Serial)\n"
                                                  "    - Smart Shunt (Serial)\n"
                                                  "    - Smart Solar (Serial)\n"
+                                                 "    - Blue Solar (Serial)\n"
                                                  "  Partial: \n"
-                                                 "    - Smart Shunt (Bluetooth BLE)\n"
+                                                 "    - Smart Shunt (Bluetooth)\n"
+                                                 "    - Smart Solar (Bluetooth)\n"
+                                                 "    - Orion Smart (Bluetooth)\n"
                                                  "Default behavior:\n"
-                                                 "  1. It will connect to all known or given device\n"
+                                                 "  1. It will connect to given device\n"
                                                  "  2. Collect and log data summary as defined at the config file\n"
-                                                 "  3. Disconnect",
+                                                 "  3. Disconnect and start over with timers set in config file",
                                      formatter_class=argparse.RawTextHelpFormatter)
     group01 = parser.add_argument_group()
     group01.add_argument("--debug", action="store_true", help="Set log level to debug")
@@ -109,6 +113,12 @@ if __name__ == "__main__":
         "--collection",
         action="store_true",
         help="Output only collections specified in config instead of single values",
+        required=False,
+    )
+    group02.add_argument(
+        "--direct-disconnect",
+        action="store_true",
+        help="Disconnect direct after getting values [NOT AVAILABLE WITH BLUETOOTH PROTOCOL]",
         required=False,
     )
 
@@ -129,9 +139,6 @@ if __name__ == "__main__":
     elif args.quiet:
         logging.getLogger().setLevel(logging.ERROR)
         handler.setLevel(logging.ERROR)
-
-    #config['keep_connected'] = args.keep_connected
-    #config['direct_disconnect'] = args.direct_disconnect
 
     if config['logger'] == 'mqtt':
         logger.addHandler(handler)
