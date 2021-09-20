@@ -46,72 +46,87 @@ mqtt:
 
 # Collected enitites by device type:
 # If you change this, the names must be the same like in the value tables from victron.py
-# These are the needed values to send a collection to logger, if other values are gathered (Usually they are from time to time), they are added to the collection too
+# If you use collections it will send whole collection as json instead of individual values.
+#
+# WARNING: Please do not use collections for protocol bluetooth currently. It will probably not return any values!
+#
+#
+# POSSIBLE COLLECTION SERIAL:
+#  smartshunt:
+#    device:
+#      - Product ID
+#      - Firmware Version
+#    battery:
+#      - State Of Charge
+#      - Time To Go
+#    latest:
+#      - Voltage
+#      - Current
+#      - Power
+#      - Starter Battery Voltage
+#      - Used Energy
+#    history:
+#      - Deepest Discharge
+#      - Last Discharge
+#      - Average Discharge
+#      - Cumulative Ah Drawn
+#      - Time Since Last Full
+#      - Charge Cycles
+#      - Full Discharges
+#      - Battery Voltage min
+#      - Battery Voltage max
+#      - Synchonisations
+#      - Alarm Voltage low
+#      - Alarm Voltage high
+#      - Starter Battery Voltage min
+#      - Starter Battery Voltage max
+#      - Total Discharged Energy
+#      - Total Charged Energy
+#  phoenix:
+#    device:
+#      - Product ID
+#      - Serial
+#      - Firmware
+#      - Production Date
+#    latest:
+#      - Voltage
+#      - AC Voltage
+#      - AC Current
+#      - Mode
+#      - Status
+#      - Warning
+#      - Alarm Reason
+#  smartsolar:
+#    device:
+#      - Day sequence Number (0..364)
+#      - Product ID
+#      - Serial
+#      - Firmware
+#      - Production Date
+#    latest:
+#      - Voltage
+#      - Current
+#      - Voltage Panel
+#      - Power
+#      - Status
+#      - MPPT Tracker Operation Mode
+#      - Off Reason
+#      - Virtual Load Output
+#      - Error Code
+#    history:
+#      - Energy All Time
+#      - Energy Today
+#      - Energy Today Max
+#      - Energy Yesterday
+#      - Energy Yesterday Max
+#
+# POSSIBLE COLLECTION BLUETOOTH-BLE:
+#  smartshunt-ble:
+#    battery:
+#      - State Of Charge
+#    latest:
+#      - Voltage
+#      - Current
+#      - Power
+#      - Used Energy
 collections:
-  smartshunt:
-    device:
-      - Product ID
-      - Firmware Version
-    battery:
-      - State Of Charge
-      - Time To Go
-    latest:
-      - Voltage
-      - Current
-      - Power
-      - Starter Battery Voltage
-      - Used Energy
-    history:
-      - Deepest Discharge
-      - Last Discharge
-      - Average Discharge
-      - Cumulative Ah Drawn
-      - Time Since Last Full
-      - Charge Cycles
-      - Full Discharges
-      - Battery Voltage min
-      - Battery Voltage max
-      - Synchonisations
-      - Alarm Voltage low
-      - Alarm Voltage high
-      - Starter Battery Voltage min
-      - Starter Battery Voltage max
-      - Total Discharged Energy
-      - Total Charged Energy
-  phoenix:
-    device:
-      - Product ID
-      - Serial
-      - Firmware
-      - Production Date
-    latest:
-      - Voltage
-      - AC Voltage
-      - AC Current
-      - Mode
-      - Status
-      - Warning
-      - Alarm Reason
-  smartsolar:
-    device:
-      - Day sequence Number (0..364)
-      - Product ID
-      - Serial
-      - Firmware
-      - Production Date
-    latest:
-      - Voltage
-      - Current
-      - Voltage Panel
-      - Power
-      - Status
-      - MPPT Tracker Operation Mode
-      - Off Reason
-      - Virtual Load Output
-      - Error Code
-    history:
-      - Energy All Time
-      - Energy Today
-      - Energy Today Max
-      - Energy Yesterday
-      - Energy Yesterday Max

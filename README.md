@@ -14,7 +14,7 @@ If you want more information about the development and a wireshark dissector, re
 See [https://community.victronenergy.com/questions/93919/victron-bluetooth-ble-protocol-publication.html](https://community.victronenergy.com/questions/93919/victron-bluetooth-ble-protocol-publication.html)
 for more information about how to activate the new gatt protocol with the beta firmware.
 
-The new script connect, gathering the data once and then disconnect on Bluetooth BLE. Other Bluetooth stuff is still supported by the script.
+The Bluetooth-BLE (new gatt protocol) and the serial protocol works quiet stable. The normal bluetooth protocol is the hardest to implement. Many values are still missing.
 
 More features will be added soon. 
 
@@ -93,6 +93,10 @@ or
 ```buildoutcfg
 logger: syslog
 ```
+or 
+```buildoutcfg
+logger: print
+```
 #### MQTT section
 Choose host, port, base_topic and if you want to use HomeAssistant Discovery (Yet only supported on serial devices). SSL and authentication will be added later.
 ```buildoutcfg
@@ -103,48 +107,22 @@ mqtt:
     hass: True
 ```
 #### Collections section
+
 You can specify if you want the values get summarized into one json output statement. Otherwise it will send out every value as soon as it is collected from victron device. 
-```buildoutcfg
-collections:
-  smartshunt:
-    device:
-      - Product ID
-      - Firmware Version
-    battery:
-      - State Of Charge
-      - Time To Go
-    latest:
-      - Voltage
-      - Current
-      - Power
-      - Starter Battery Voltage
-      - Used Energy
-    history:
-      - Deepest Discharge
-      - Last Discharge
-      - Average Discharge
-      - Cumulative Ah Drawn
-      - Time Since Last Full
-      - Charge Cycles
-      - Full Discharges
-      - Battery Voltage min
-      - Battery Voltage max
-      - Synchonisations
-      - Alarm Voltage low
-      - Alarm Voltage high
-      - Starter Battery Voltage min
-      - Starter Battery Voltage max
-      - Total Discharged Energy
-      - Total Charged Energy
-  ...
-```
+See configfile for more information!
+
 ## Known issues
+- The devices with bluetooth protocol are currently auto disconnecting after 30 seconds. This may prevent some values from being gathered.
 - Orion Smart must be more reverse engineered to get some more interesting values
 - Bluetooth: From smart solar you can't get the history values. The protocol itself is decoded (and working) for this part, but the smart solar doesn't send the data. I guess we need to send another init sequence. I didn't figure out the corrent sequence yet!
 - Serial: Smart Solar history currently not gathered
+
+Feel free to help improving this repository.
 
 ## Future plans:
 - Choose via config file which values should be printed
 - Choose how often values should be printed (especially bluettooth with notifications)
 - CMD Parameter instead of config (easier testing of new devices)
 - SmartSolar history values
+- Get device settings via serial and bluetooth
+- Add a config checker to avoid invalid config parameter
