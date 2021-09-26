@@ -20,19 +20,6 @@ with open("config.yml", 'r') as ymlfile:
     config = yaml.full_load(ymlfile)
 
 
-logger_format = '[%(levelname)-7s] (%(asctime)s) %(filename)s::%(lineno)d %(message)s'
-logging.basicConfig(level=logging.INFO,
-                    format=logger_format,
-                    datefmt='%Y-%m-%d %H:%M:%S',
-                    filename=f"logs/victron.log")
-logger = logging.getLogger()
-
-handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.INFO)
-formatter = logging.Formatter(logger_format)
-handler.setFormatter(formatter)
-
-
 def victron_thread(thread_count, config, vdevice_config, thread_q):
     from lib.victron import Victron
     v = Victron(config, vdevice_config, output, args, thread_count, thread_q)
@@ -133,6 +120,29 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    try:
+        dev_id = int(args.device)
+    except ValueError:
+        for count, device_config in enumerate(config['devices']):
+            if device_config['name'] == args.device:
+                dev_id = count
+                break
+            print(f'{args.device} not found in config')
+            sys.exit(1)
+    devices_config = config['devices'][dev_id]
+
+    logger_format = '[%(levelname)-7s] (%(asctime)s) %(filename)s::%(lineno)d %(message)s'
+    logging.basicConfig(level=logging.INFO,
+                        format=logger_format,
+                        datefmt='%Y-%m-%d %H:%M:%S',
+                        filename=f'logs/victron-{devices_config["name"]}.log')
+    logger = logging.getLogger()
+
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter(logger_format)
+    handler.setFormatter(formatter)
+
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
         handler.setLevel(logging.DEBUG)
@@ -161,21 +171,5 @@ if __name__ == "__main__":
 
     q = queue.Queue()
 
-    # Build device list with all devices or just the given by commandline
-    if args.device is not None:
-        try:
-            dev_id = int(args.device)
-        except ValueError:
-            for count, device_config in enumerate(config['devices']):
-                if device_config['name'] == args.device:
-                    dev_id = count
-                    break
-                logger.error(f'{args.device} not found in config')
-                sys.exit(1)
-        devices_config = [config['devices'][dev_id]]
-    else:
-        devices_config = config['devices']
-
-    for count, device_config in enumerate(devices_config):
-        t = threading.Timer(2+(count*5), victron_thread, args=(count, config, device_config, q))
-        t.start()
+    t = threading.Timer(2+(1*5), victron_thread, args=(1, config, devices_config, q))
+    t.start()
