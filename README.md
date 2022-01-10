@@ -53,6 +53,10 @@ Start the script for your desired device: `python3 victron.py -d 0`
 
 There are some more commandline arguments, you can view them with `python3 victron.py --help`
 
+### FAQ
+#### No output shown with following log message "merror: Not connected"
+Please check if you paired the victron device correctly via bluetooth using bluetoothctl. If you changed the pin of the vicron device, delete and repair the device.
+
 ### Configuration in detail
 #### Device section
 **Mandatory:**
