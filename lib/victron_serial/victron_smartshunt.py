@@ -37,6 +37,7 @@ class Smartshunt:
         'VS': ("Latest", "Starter Battery Voltage", "V", 0.001, helper.convert_int_factor),
         'I': ("Latest", "Current", "A", 0.001, helper.convert_int_factor),
         'P': ("Latest", "Power", "W", 1, helper.convert_int_factor),
+        'T': ("Latest", "Battery Temperature", "°C", 1, helper.convert_int_factor),
         'CE': ("Latest", "Used Energy", "Ah", 0.001, helper.convert_int_factor),
         'SOC': ("Battery", "State Of Charge", "%", 0.1, helper.convert_int_factor),
         'TTG': ("Battery", "Time To Go", "Min", 1, helper.convert_int_factor),
