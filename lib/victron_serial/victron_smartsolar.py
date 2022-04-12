@@ -17,6 +17,7 @@ class Smartsolar:
     MAP = {
         'V': ("Latest", "Voltage", "V", 0.001, helper.convert_int_factor),
         'I': ("Latest", "Current", "A", 0.001, helper.convert_int_factor),
+        'IL': ("Latest", "Load Current", "A", 0.001, helper.convert_int_factor),
         'VPV': ("Latest", "Voltage Panel", "V", 0.001, helper.convert_int_factor),
         'PPV': ("Latest", "Power", "W", 1, helper.convert_int_factor),
         'CS': ("Latest", "Status", "", CS, helper.convert_map_out),
