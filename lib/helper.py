@@ -131,7 +131,8 @@ def build_hass_discovery_config(device_name, model, serial, firmware, sensor_con
     if sensor_config[0] == 'Latest':
         hass_config_data["state_class"] = 'measurement'
 
-    hass_config_data["json_attributes_topic"] = f'{base_topic}/{device_name}/{subtopic}'
+    # json_attributes_topic seems to be not used and creating ans json warning in homeassistant logs
+    #hass_config_data["json_attributes_topic"] = f'{base_topic}/{device_name}/{subtopic}'
     hass_config_data["state_topic"] = f'{base_topic}/{device_name}/{subtopic}'
 
     if collection is not None:
