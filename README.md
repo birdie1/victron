@@ -43,15 +43,40 @@ Serial:
 These scripts are written for my specific config file. If you have your devices in different order, you may need to adjust them.
 
 ## Howto use
+---
+**NOTE**
+
 If you want the serial communication with the Phoenix Inverter, you must install this library:
 - vedirect: https://github.com/karioja/vedirect
 
-You need to install some requirements: `pip3 install -r requirements.txt`
-
-Add your devices to the configuration file.
-Start the script for your desired device: `python3 victron.py -d 0`
-
 There are some more commandline arguments, you can view them with `python3 victron.py --help`
+
+---
+
+1. You need to install some requirements: `pip3 install -r requirements.txt`
+2. Add your devices to the configuration file. See "Configuration in detail" section for examples.
+3. If you are using bluetooth or bluetooth ble you must be pairing your devices via bluetoothctl
+```
+# Open bluetoothctl from commandline
+bluetoothctl
+
+# Enable scanning
+scan on
+  
+# Get the mac address of your device
+# pair device and enter pin
+pair MAC
+
+```
+4. Start the script for your desired device: `python3 victron.py -d 0`
+5. For autostart tweak systemd files to your need, link them to `/etc/systemd/system/`, then start and/or enable systemd file
+```
+ln -s /opt/victron/systemd/victron-shunt.service /etc/systemd/system/victron-shunt.service
+
+systemctl enable victron-shunt.service
+systemctl start victron-shunt.service
+```
+
 
 ### FAQ
 #### No output shown with following log message "merror: Not connected"
