@@ -107,12 +107,15 @@ def build_hass_discovery_config(device_name, model, serial, firmware, sensor_con
     hass_config_topic = f'homeassistant/sensor/{device_name}/{value_template.replace(" ", "_")}/config'
     hass_config_data = {}
 
-    if collection is None:
-        hass_config_data["unique_id"] = f'{device_name}_{subtopic}_victron'
-        hass_config_data["name"] = f'{device_name} {subtopic}'
-    else:
+    if collection is not None:
         hass_config_data["unique_id"] = f'{device_name}_{value_template}_{collection}_victron'
         hass_config_data["name"] = f'{device_name} {value_template}'
+    elif sensor_config[2] == 'timestamp':
+        hass_config_data["unique_id"] = f'{device_name}_{value_template}_victron'
+        hass_config_data["name"] = f'{device_name} {value_template}'
+    else:
+        hass_config_data["unique_id"] = f'{device_name}_{subtopic}_victron'
+        hass_config_data["name"] = f'{device_name} {subtopic}'
 
     if sensor_config[2] == '%':
         hass_config_data["device_class"] = 'battery'
@@ -122,14 +125,19 @@ def build_hass_discovery_config(device_name, model, serial, firmware, sensor_con
         hass_config_data["device_class"] = 'current'
     elif sensor_config[2] == 'W' or sensor_config[2] == 'Wh' or sensor_config[2] == 'kWh':
         hass_config_data["device_class"] = 'power'
+    elif sensor_config[2] == 'Time':
+        hass_config_data["device_class"] = 'timestamp'
     else:
         pass
 
-    if sensor_config[2] != '':
+    if sensor_config[2] != '' and sensor_config[2] != 'timestamp':
         hass_config_data["unit_of_measurement"] = sensor_config[2]
 
     if sensor_config[0] == 'Latest':
         hass_config_data["state_class"] = 'measurement'
+
+    if sensor_config[2] == 'timestamp':
+        hass_config_data["value_template"] = "{{ as_timestamp(now())  | timestamp_custom(\"%Y-%m-%d %H:%M:%S\") }}"
 
     # json_attributes_topic seems to be not used and creating ans json warning in homeassistant logs
     #hass_config_data["json_attributes_topic"] = f'{base_topic}/{device_name}/{subtopic}'
@@ -176,3 +184,23 @@ def send_hass_config_payload(device_name, pid, ser, fw, mapping_table, base_topi
         )
 
         output(device_name, hass_config_subtopic, hass_config_data, True)
+
+    if len(list(mapping_table.items())) > 0:
+        subtopic_updated = list(mapping_table.items())[0][1][1]
+    else:
+        subtopic_updated = 'missing_mapping_table'
+
+    # Add an updated timestamp sensor
+    hass_config_subtopic, hass_config_data = build_hass_discovery_config(
+        device_name,
+        pid,
+        ser,
+        fw,
+        ['', '', 'timestamp'],
+        base_topic,
+        subtopic_updated,
+        'Updated',
+        None
+    )
+
+    output(device_name, hass_config_subtopic, hass_config_data, True)
