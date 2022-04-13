@@ -26,12 +26,19 @@ class SmartshuntBLE:
     # This one exists as well, but we dont need it:
     # '6597ffff-4bda-4c1e-af4b-551c4cf74769': ("Special", "Keep-alive", "s", 1000, False, lib.helper.convert_value_number),
     MAP = {
+        '6597ed8d-4bda-4c1e-af4b-551c4cf74769': ("Latest", "Voltage", "V", 100, True, lib.helper.convert_value_number),
         '6597eeff-4bda-4c1e-af4b-551c4cf74769': ("Latest", "Used Energy", "Ah", 10, True, lib.helper.convert_value_number),
         '6597ed8e-4bda-4c1e-af4b-551c4cf74769': ("Latest", "Power", "W", 1, True, lib.helper.convert_value_number),
-        '6597ed8d-4bda-4c1e-af4b-551c4cf74769': ("Latest", "Voltage", "V", 100, True, lib.helper.convert_value_number),
         '6597ed8c-4bda-4c1e-af4b-551c4cf74769': ("Latest", "Current", "A", 1000, True, lib.helper.convert_value_number),
         '65970fff-4bda-4c1e-af4b-551c4cf74769': ("Latest", "State Of Charge", "%", 100, False, lib.helper.convert_value_number),
     }
+
+    # New unknown values:
+    #    '65970ffe-4bda-4c1e-af4b-551c4cf74769'
+    #    '65970383-4bda-4c1e-af4b-551c4cf74769'
+    #    '65970382-4bda-4c1e-af4b-551c4cf74769'
+    #    '6597edec-4bda-4c1e-af4b-551c4cf74769'
+    #    '6597ed7d-4bda-4c1e-af4b-551c4cf74769'
 
     keep_alive_handle_uuid_map = {
         "b2c4": "6597ffff-4bda-4c1e-af4b-551c4cf74769"
@@ -78,6 +85,10 @@ class SmartshuntBLE:
 
         if characteristic.uuid not in self.MAP.keys():
             logger.warning(f'{self.config["name"]}: Characteristic ({characteristic.uuid}) not found in known Table')
+            #result_value = lib.helper.convert_value_unknown(data, None)
+            result_value = lib.helper.convert_value_number(data, ['', '', '', 1, True])
+            logger.warning(f'{self.config["name"]}: Characteristic ({characteristic.uuid}) not found in known Table | Rawvalue: {data}')
+            logger.warning(f'{self.config["name"]}: Characteristic ({characteristic.uuid}) not found in known Table | Value: {result_value}')
         else:
             self.count_values += 1
             command = self.MAP[characteristic.uuid]
