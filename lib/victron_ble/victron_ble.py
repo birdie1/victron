@@ -50,11 +50,10 @@ class VictronBle:
         finally:
             manager.stop_discovery()
 
-        manager.run()
-
         if not self.gatt_device.connected:
             return False
         else:
+            manager.run()
             return True
 
     def connect_disconnect_loop(self, args, timer):
