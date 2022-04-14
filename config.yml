@@ -38,6 +38,7 @@ timer:
 logger: mqtt
 
 ## If logging is set to mqtt, this section must be filled
+## Set hass to True if you want support for Homeassistant Discovery
 ## Mandatory:
 ##   host: IP or Hostname
 ##   port: 1883
