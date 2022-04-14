@@ -37,12 +37,22 @@ timer:
 ##    - print
 logger: mqtt
 
-## If logging is set to mqtt, these values must be filled
+## If logging is set to mqtt, this section must be filled
+## Mandatory:
+##   host: IP or Hostname
+##   port: 1883
+##   base_topic: victron
+##   hass: True/False
+## Optional:
+##   username: MQTT_USER
+##   password: PASSWORD
 mqtt:
     host: 192.168.3.2
     port: 1883
     base_topic: victron
     hass: True
+    username: USERNAME
+    password: PASSWORD
 
 # Collected enitites by device type:
 # If you change this, the names must be the same like in the value tables from victron.py
