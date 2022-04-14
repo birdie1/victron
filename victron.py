@@ -155,6 +155,8 @@ if __name__ == "__main__":
 
         import paho.mqtt.client as mqtt
         client = mqtt.Client()
+        if "username" in config['mqtt'] and "password" in config['mqtt']:
+            client.username_pw_set(username=config['mqtt']['username'],password=config['mqtt']['password'])
         client.connect(config['mqtt']['host'], config['mqtt']['port'], 60)
         client.loop_start()
 
