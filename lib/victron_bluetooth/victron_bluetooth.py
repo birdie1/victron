@@ -229,12 +229,11 @@ class VictronBluetooth:
         finally:
             manager.stop_discovery()
 
-        manager.run()
-
-        if self.gatt_device.connected:
-            return True
-        else:
+        if not self.gatt_device.connected:
             return False
+        else:
+            manager.run()
+            return True
 
     def connect_disconnect_loop(self, args, timer):
         options = {}
