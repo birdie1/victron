@@ -41,6 +41,9 @@ def output_syslog(device_name, category, value):
         ]
     )
 
+def mqtt_onconnect(client, userdata, flags, rc):
+    client.publish(mqtt_lwt, payload=1, qos=0, retain=True)
+
 
 def output_mqtt(device_name, subtopic, value, hass_config=False):
     global client
@@ -157,6 +160,11 @@ if __name__ == "__main__":
         client = mqtt.Client()
         if "username" in config['mqtt'] and "password" in config['mqtt']:
             client.username_pw_set(username=config['mqtt']['username'],password=config['mqtt']['password'])
+
+        mqtt_lwt = f'{config["mqtt"]["base_topic"]}/{devices_config["name"]}/online'
+        client.will_set(mqtt_lwt, payload=0, qos=0, retain=True)
+        client.on_connect = mqtt_onconnect
+
         client.connect(config['mqtt']['host'], config['mqtt']['port'], 60)
         client.loop_start()
 
