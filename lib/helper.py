@@ -133,14 +133,16 @@ def build_hass_discovery_config(device_name, model, serial, firmware, sensor_con
     if sensor_config[2] != '' and sensor_config[2] != 'timestamp':
         hass_config_data["unit_of_measurement"] = sensor_config[2]
 
+    if sensor_config[2] == 'timestamp':
+        #hass_config_data["display_options"] = "date_time"
+        hass_config_data["value_template"] = "{{ as_timestamp(now())  | timestamp_custom(\"%Y-%m-%d %H:%M:%S\") }}"
+
     if sensor_config[0] == 'Latest':
         hass_config_data["state_class"] = 'measurement'
 
-    if sensor_config[2] == 'timestamp':
-        hass_config_data["value_template"] = "{{ as_timestamp(now())  | timestamp_custom(\"%Y-%m-%d %H:%M:%S\") }}"
+    if sensor_config[0] == 'Time':
+        hass_config_data["value_template"] = "{% if value|string == '-1.0' %}infinit{% else %}{{ value }} minutes{% endif %}"
 
-    # json_attributes_topic seems to be not used and creating ans json warning in homeassistant logs
-    #hass_config_data["json_attributes_topic"] = f'{base_topic}/{device_name}/{subtopic}'
     hass_config_data["state_topic"] = f'{base_topic}/{device_name}/{subtopic}'
 
     if collection is not None:
