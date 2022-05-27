@@ -16,9 +16,6 @@ from datetime import datetime, timedelta
 from enum import IntEnum
 from time import sleep
 
-with open("config.yml", 'r') as ymlfile:
-    config = yaml.full_load(ymlfile)
-
 
 def victron_thread(thread_count, config, vdevice_config, thread_q):
     from lib.victron import Victron
@@ -76,6 +73,12 @@ def get_helper_string_device(devices):
 
 
 if __name__ == "__main__":
+    if os.path.exists('config.yml'):
+        with open('config.yml', 'r') as ymlfile:
+            config = yaml.full_load(ymlfile)
+    else:
+        config = None
+
     parser = argparse.ArgumentParser(description="Victron Reader (Bluetooth, BLE and Serial) \n\n"
                                                  "Current supported devices:\n"
                                                  "  Full: \n" 
@@ -111,6 +114,13 @@ if __name__ == "__main__":
         help="Disconnect direct after getting values [NOT AVAILABLE WITH BLUETOOTH PROTOCOL]",
         required=False,
     )
+    group02.add_argument(
+        "-C",
+        "--config-file",
+        type=str,
+        help="Specify different config file [Default: config.yml]",
+        required=False,
+    )
 
     group03 = parser.add_argument_group()
     group03.add_argument(
@@ -118,10 +128,18 @@ if __name__ == "__main__":
         "--device",
         metavar="NUM / NAME",
         type=str,
-        help=get_helper_string_device(config['devices']),
+        help=get_helper_string_device(config['devices']) if config is not None else "",
         required=True,
     )
     args = parser.parse_args()
+
+    if args.config_file:
+        with open(args.config_file, 'r') as ymlfile:
+            config = yaml.full_load(ymlfile)
+
+    if config is None:
+        print("config.yml missing. Please create or specify another config file with -C")
+        sys.exit(1)
 
     try:
         dev_id = int(args.device)
