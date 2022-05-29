@@ -16,6 +16,8 @@ from datetime import datetime, timedelta
 from enum import IntEnum
 from time import sleep
 
+version = 0.1
+
 
 def victron_thread(thread_count, config, vdevice_config, thread_q):
     from lib.victron import Victron
@@ -97,6 +99,12 @@ def get_helper_string_device(devices):
     return return_string
 
 
+def check_if_required_device_argument():
+    for x in ['-h', '--help', '-v', '--version']:
+        if x in sys.argv:
+            return False
+    return True
+
 if __name__ == "__main__":
     if os.path.exists('config.yml'):
         with open('config.yml', 'r') as ymlfile:
@@ -134,6 +142,13 @@ if __name__ == "__main__":
         required=False,
     )
     group02.add_argument(
+        "-C",
+        "--config-file",
+        type=str,
+        help="Specify different config file [Default: config.yml]",
+        required=False,
+    )
+    group02.add_argument(
         "-D",
         "--direct-disconnect",
         action="store_true",
@@ -141,10 +156,10 @@ if __name__ == "__main__":
         required=False,
     )
     group02.add_argument(
-        "-C",
-        "--config-file",
-        type=str,
-        help="Specify different config file [Default: config.yml]",
+        "-v",
+        "--version",
+        action="store_true",
+        help="Show version and exit",
         required=False,
     )
 
@@ -155,9 +170,13 @@ if __name__ == "__main__":
         metavar="NUM / NAME",
         type=str,
         help=get_helper_string_device(config['devices']) if config is not None else "",
-        required=True,
+        required=check_if_required_device_argument(),
     )
     args = parser.parse_args()
+
+    if args.version:
+        print(version)
+        sys.exit(0)
 
     if args.config_file:
         with open(args.config_file, 'r') as ymlfile:
