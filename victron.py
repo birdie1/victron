@@ -152,7 +152,7 @@ if __name__ == "__main__":
         "-D",
         "--direct-disconnect",
         action="store_true",
-        help="Disconnect direct after getting values [NOT AVAILABLE WITH BLUETOOTH PROTOCOL]",
+        help="Disconnect direct after getting values",
         required=False,
     )
     group02.add_argument(

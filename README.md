@@ -78,6 +78,82 @@ systemctl enable victron-shunt.service
 systemctl start victron-shunt.service
 ```
 
+### Commandline arguments
+```
+./victron.py -h
+usage: victron.py [-h] [--debug] [--quiet] [-c] [-C CONFIG_FILE] [-D] [-v] [-d NUM / NAME]
+
+Victron Reader (Bluetooth, BLE and Serial) 
+
+Current supported devices:
+  Full: 
+    - Smart Shunt (Bluetooth BLE)
+    - Phoenix Inverter (Serial)
+    - Smart Shunt (Serial)
+    - Smart Solar (Serial)
+    - Blue Solar (Serial)
+  Partial: 
+    - Smart Shunt (Bluetooth)
+    - Smart Solar (Bluetooth)
+    - Orion Smart (Bluetooth)
+Default behavior:
+  1. It will connect to given device
+  2. Collect and log data summary as defined at the config file
+  3. Disconnect and start over with timers set in config file
+
+options:
+  -h, --help            show this help message and exit
+
+  --debug               Set log level to debug
+  --quiet               Set log level to error
+
+  -c, --collection      Output only collections specified in config instead of single values
+  -C CONFIG_FILE, --config-file CONFIG_FILE
+                        Specify different config file [Default: config.yml]
+  -D, --direct-disconnect
+                        Disconnect direct after getting values
+  -v, --version         Show version and exit
+
+  -d NUM / NAME, --device NUM / NAME
+                        0: Shunt1 | 
+
+```
+
+#### Meta
+##### -h / --help
+Show help.
+
+##### -v / --version
+Show version.
+
+#### Mandatory
+##### -d / --device NUMBER|NAME
+You need to specify the device from configuration which you want to connect to.
+
+#### Optional
+##### --debug / --info
+Set log level.
+
+##### -c / --collection
+Define a collection to "merge" values in to one output instead of output every value separately. A collection must look like:
+```
+collections:
+  DEVICENAME:
+    COLLECTIONNAME:
+      - VALUENAME
+      - VALUENAME2
+```
+You need to set the DEVICENAME the same as your device. You can choose the COLLECTIONNAME freely, it will be used in json output as key. 
+The VALUENAMES must match with the code, see config.yml for possible VALUENAMES and more examples.
+
+##### -C / --config-file FILENAME
+Specify a config file other than default (config.yml).
+
+##### -D / --direct-disconnect
+Default the program will not exit on its own. If you want to collect the values from a device and exit, use this option. Be aware, that it will act different on the different connection protocols.
+
+**serial / bluetooth-ble**: It will exit after the first value. To get all values once, you need to specify a collection to exit after all values are returned.\
+**bluetooth**: It will exit after the auto disconnect of the device and return all values gathered until then.
 
 ### FAQ
 #### No output shown with following log message "merror: Not connected"

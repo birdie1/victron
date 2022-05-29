@@ -246,14 +246,13 @@ class VictronBluetooth:
 
         while True:
             if self.connect_loop():
-                #if args.direct_disconnect:
-
+                if args.direct_disconnect:
+                    break
                 next_time = datetime.now() + timedelta(seconds=timer['bluetooth']['disconnected'])
                 logger.debug(f'{self.device_config["name"]}: Will reconnect at {next_time}')
                 time.sleep(timer['bluetooth']['disconnected'])
             else:
                 time.sleep(timer['retry'])
-
 
     def handle_bulk_values(self, value):
         self.buffer.extend(value)
