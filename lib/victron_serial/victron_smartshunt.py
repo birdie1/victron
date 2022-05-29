@@ -59,7 +59,7 @@ class Smartshunt:
     def get_device_info(self):
         data = self.ve.read_data_single()
         pid = self.MAP['PID'][4](data['PID'], self.MAP['PID'])
-        ser = self.MAP['SER#'][4](data['SER#'], self.MAP['SER#'])
+        ser = "NOT SUPPORTED ON SMARTSHUNT SERIAL"
         fw = self.MAP['FW'][4](data['FW'], self.MAP['FW'])
         return pid, ser, fw
 
