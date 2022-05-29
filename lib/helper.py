@@ -41,6 +41,11 @@ def convert_value_unknown(value, command):
 
 ## START: SERIAL CONVERT FUNCTIONS
 def convert_int_factor(value, command):
+    try:
+        int(value)
+    except ValueError:
+        return str(value)
+
     data = int(value) * command[3]
     if type(data) == int:
         return str(data)
