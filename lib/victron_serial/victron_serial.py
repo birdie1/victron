@@ -37,5 +37,6 @@ class VictronSerial:
 
             if args.direct_disconnect:
                 self.finished_target()
+                return
             else:
                 time.sleep(timer['serial']['repeat'])
