@@ -65,4 +65,4 @@ class Smartsolar:
     def send_out(self, key, value, output):
         command = self.MAP[key]
         data = command[4](value, command)
-        output(command[1], data)
+        output(command[1], data, command[2])

@@ -57,7 +57,6 @@ class VictronBle:
             return True
 
     def connect_disconnect_loop(self, args, timer):
-        # TODO Remove option if not necessary
         options = {
             'direct_disconnect': args.direct_disconnect
         }

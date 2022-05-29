@@ -18,9 +18,9 @@ class Victron:
         self.victron_type = None
 
         if self.cmd.collection:
-            if device_config['type'] in self.config['collections']:
+            if device_config['name'] in self.config['collections']:
                 self.collections = {}
-                for collection in self.config['collections'][device_config['type']].keys():
+                for collection in self.config['collections'][device_config['name']].keys():
                     self.reset_collection(collection)
 
         if self.device_config['protocol'] == 'serial':
@@ -53,7 +53,7 @@ class Victron:
 
     def reset_collection(self, collection_name):
         collection = {}
-        for item in self.config['collections'][self.device_config['type']][collection_name]:
+        for item in self.config['collections'][self.device_config['name']][collection_name]:
             collection[item] = None
         self.collections[collection_name] = collection
 
@@ -63,20 +63,23 @@ class Victron:
                 return False
         return True
 
-    def set_value_in_collections(self, value_name, value):
+    def set_value_in_collections(self, value_name, value, vunit):
         for col_key in self.collections.keys():
             if value_name in self.collections[col_key]:
-                self.collections[col_key][value_name] = value
-                self.collections[col_key][f'{value_name} Updated'] = f'{datetime.now():%Y-%m-%d %H:%M:%S}'
+                self.collections[col_key][value_name] = {
+                    'value': value,
+                    'unit': vunit,
+                    'updated': f'{datetime.now():%Y-%m-%d %H:%M:%S}'
+                }
                 logger.debug(f'{self.device_config["name"]}: Setting value in collection: {value_name} to {value}')
                 return col_key
         return False
 
-    def output(self, category, value):
+    def output(self, category, value, vunit=None):
         if not self.cmd.collection:
-            self.given_output(self.device_config['name'], category, value)
+            self.given_output(self.device_config['name'], category, value, vunit)
         else:
-            col_key = self.set_value_in_collections(category, value)
+            col_key = self.set_value_in_collections(category, value, vunit)
             if not col_key:
                 logger.debug(
                     f'{self.device_config["name"]}: {category} not in any collections, it will never be published')

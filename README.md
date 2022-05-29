@@ -34,10 +34,11 @@ Serial:
 - Smart Shunt
 - Smart Solar 100/30
 
-### Outputs
+### Outputs (Single values or as collection of values)
 - mqtt
 - syslog
 - print
+- json
 
 ### Autostart scripts (systemd)
 These scripts are written for my specific config file. If you have your devices in different order, you may need to adjust them.
@@ -125,6 +126,10 @@ logger: syslog
 or 
 ```buildoutcfg
 logger: print
+```
+or 
+```buildoutcfg
+logger: json
 ```
 #### MQTT section
 Choose host, port, base_topic and if you want to use HomeAssistant Discovery (Yet only supported on serial devices). SSL and authentication will be added later.

@@ -35,6 +35,7 @@ timer:
 ##    - syslog
 ##    - mqtt
 ##    - print
+##    - json
 logger: mqtt
 
 ## If logging is set to mqtt, this section must be filled
@@ -58,6 +59,13 @@ mqtt:
 # Collected enitites by device type:
 # If you change this, the names must be the same like in the value tables from victron.py
 # If you use collections it will send whole collection as json instead of individual values.
+#
+# Replace key to name of your device: For example:
+# collections:
+#   Shunt1:
+#     battery:
+#       - State Of Charge
+#       - ...
 #
 # WARNING: Please do not use collections for protocol bluetooth currently. It will probably not return any values!
 #
@@ -132,11 +140,13 @@ mqtt:
 #      - Energy Yesterday Max
 #
 # POSSIBLE COLLECTION BLUETOOTH-BLE:
-#  smartshunt-ble:
+#  smartshunt:
 #    battery:
 #      - State Of Charge
+#      - Remaining Time
 #    latest:
 #      - Voltage
+#      - Starter Voltage
 #      - Current
 #      - Power
 #      - Used Energy

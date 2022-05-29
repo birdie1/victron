@@ -387,7 +387,7 @@ class VictronBluetooth:
             value = result[i]['value']
 
             logger.debug(f'{self.device_config["name"]}: Collected {value_name} -> {value}')
-            self.output(value_name, value)
+            self.output(value_name, value, vunit=result[i]['command'][2])
 
         consumed += used
 

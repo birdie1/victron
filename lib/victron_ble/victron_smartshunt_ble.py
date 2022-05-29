@@ -86,7 +86,7 @@ class SmartshuntBLE:
             self.count_values += 1
             command = self.MAP[characteristic.uuid]
             result_value = command[5](data, command)
-            output(command[1], result_value)
+            output(command[1], result_value, vunit=command[2])
 
         if self.count_values == len(self.MAP):
             logger.info(f'{self.config["name"]}: Gathering data successful')

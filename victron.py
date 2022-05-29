@@ -23,26 +23,51 @@ def victron_thread(thread_count, config, vdevice_config, thread_q):
     v.connect_disconnect_loop()
 
 
-def output_print(device_name, category, value):
-    print(f'{device_name}|{category}:{value}')
+def output_print(device_name, category, value, vunit=None):
+    if type(value) == dict:
+        map = {}
+        map[category] = value
+        print(json.dumps(map))
+    else:
+        print(f'{category}:{value}')
 
 
-def output_syslog(device_name, category, value):
+def output_json(device_name, category, value, vunit=None):
+    map = {}
+    if type(value) == dict:
+        map[category] = value
+    else:
+        map[category] = {
+            'value': value,
+            'unit': vunit
+        }
+    print(json.dumps(map))
+
+
+def output_syslog(device_name, category, value, vunit=None):
+    if type(value) == dict:
+        map = {}
+        map[category] = value
+        return_data = json.dumps(map)
+    else:
+        return_data = f"{device_name}|{category}:{value}"
+
     subprocess.run(
         [
             "/usr/bin/logger",
             f"--id={os.getpid()}",
             "-t",
             "victron",
-            f"{device_name}|{category}:{value}",
+            return_data,
         ]
     )
+
 
 def mqtt_onconnect(client, userdata, flags, rc):
     client.publish(mqtt_lwt, payload=1, qos=0, retain=True)
 
 
-def output_mqtt(device_name, subtopic, value, hass_config=False):
+def output_mqtt(device_name, subtopic, value, hass_config=False, vunit=None):
     global client
     global config
     retain = False
@@ -109,6 +134,7 @@ if __name__ == "__main__":
         required=False,
     )
     group02.add_argument(
+        "-D",
         "--direct-disconnect",
         action="store_true",
         help="Disconnect direct after getting values [NOT AVAILABLE WITH BLUETOOTH PROTOCOL]",
@@ -192,6 +218,8 @@ if __name__ == "__main__":
         output = output_syslog
     elif config['logger'] == 'print':
         output = output_print
+    elif config['logger'] == 'json':
+        output = output_json
     else:
         logger.addHandler(handler)
         logger.error('No output specified!')
