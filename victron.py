@@ -75,7 +75,7 @@ def output_mqtt(device_name, subtopic, value, hass_config=False, vunit=None):
     retain = False
 
     if hass_config:
-        pub = subtopic
+        pub = f'{config["mqtt"]["base_topic"]}/{device_name}/{subtopic}'
         data = value
         retain = True
     else:
