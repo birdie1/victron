@@ -190,7 +190,7 @@ def send_hass_config_payload(device_name, pid, ser, fw, mapping_table, base_topi
             collection
         )
 
-        output(device_name, hass_config_subtopic, hass_config_data, True)
+        output(device_name, hass_config_subtopic, hass_config_data, hass_config=True)
 
     if len(list(mapping_table.items())) > 0:
         subtopic_updated = list(mapping_table.items())[0][1][1]

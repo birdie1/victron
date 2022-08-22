@@ -77,7 +77,7 @@ class Victron:
 
     def output(self, category, value, vunit=None):
         if not self.cmd.collection:
-            self.given_output(self.device_config['name'], category, value, False, vunit)
+            self.given_output(self.device_config['name'], category, value)
         else:
             col_key = self.set_value_in_collections(category, value, vunit)
             if not col_key:
