@@ -25,7 +25,7 @@ def victron_thread(thread_count, config, vdevice_config, thread_q):
     v.connect_disconnect_loop()
 
 
-def output_print(device_name, category, value, vunit=None):
+def output_print(device_name, category, value, hass_config=False, vunit=None):
     if type(value) == dict:
         map = {}
         map[category] = value
@@ -34,7 +34,7 @@ def output_print(device_name, category, value, vunit=None):
         print(f'{category}:{value}')
 
 
-def output_json(device_name, category, value, vunit=None):
+def output_json(device_name, category, value, hass_config=False, vunit=None):
     map = {}
     if type(value) == dict:
         map[category] = value
@@ -46,7 +46,7 @@ def output_json(device_name, category, value, vunit=None):
     print(json.dumps(map))
 
 
-def output_syslog(device_name, category, value, vunit=None):
+def output_syslog(device_name, category, value, hass_config=False, vunit=None):
     if type(value) == dict:
         map = {}
         map[category] = value
