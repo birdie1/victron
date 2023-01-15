@@ -40,7 +40,7 @@ class Smartshunt:
         'T': ("Latest", "Battery Temperature", "°C", 1, helper.convert_int_factor),
         'CE': ("Latest", "Used Energy", "Ah", 0.001, helper.convert_int_factor),
         'SOC': ("Battery", "State Of Charge", "%", 0.1, helper.convert_int_factor),
-        'TTG': ("Battery", "Time To Go", "Min", 1, helper.convert_int_factor),
+        'TTG': ("Battery", "Time To Go", "min", 1, helper.convert_int_factor),
         'Alarm': ("Latest", "Alarm", "", 0, helper.convert_str_out),
         'AR': ("Latest", "Alarm Reason", "", WARN_AR, helper.convert_warn_ar),
         'BMV': ("Meta", "BMV", "", "", helper.convert_str_out),

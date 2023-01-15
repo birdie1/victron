@@ -128,8 +128,13 @@ def build_hass_discovery_config(device_name, model, serial, firmware, sensor_con
         hass_config_data["device_class"] = 'voltage'
     elif sensor_config[2] == 'A' or sensor_config[2] == 'Ah':
         hass_config_data["device_class"] = 'current'
-    elif sensor_config[2] == 'W' or sensor_config[2] == 'Wh' or sensor_config[2] == 'kWh':
+    elif sensor_config[2] == 'W':
         hass_config_data["device_class"] = 'power'
+    elif sensor_config[2] == 'Wh' or sensor_config[2] == 'kWh':
+        hass_config_data["device_class"] = 'energy'
+        hass_config_data["state_class"] = 'total_increasing'
+    elif sensor_config[2] == 'min' or sensor_config[2] == 's':
+        hass_config_data["device_class"] = 'duration'
     elif sensor_config[2] == 'Time':
         hass_config_data["device_class"] = 'timestamp'
     else:
