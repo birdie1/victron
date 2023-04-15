@@ -17,7 +17,7 @@ value_description_map = {
     'H6': ("History", "Cumulative Ah Drawn", "Ah", 0.001, helper.convert_int_factor),
     'H7': ("History", "Battery Voltage min", "V", 0.001, helper.convert_int_factor),
     'H8': ("History", "Battery Voltage max", "V", 0.001, helper.convert_int_factor),
-    'H9': ("History", "Time Since Last Full", "s", 1, helper.convert_int_factor),
+    'H9': ("Battery", "Time Since Last Full", "s", 1, helper.convert_int_factor),
     'H10': ("History", "Synchonisations", "", 1, helper.convert_int_factor),
     'H11': ("History", "Alarm Voltage low", "", 1, helper.convert_int_factor),
     'H12': ("History", "Alarm Voltage high", "", 1, helper.convert_int_factor),

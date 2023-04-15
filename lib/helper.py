@@ -149,6 +149,10 @@ def build_hass_discovery_config(device_name, model, serial, firmware, sensor_con
 
     if sensor_config[0] == 'Latest':
         hass_config_data["state_class"] = 'measurement'
+        hass_config_data["expire_after"] = 600
+
+    if sensor_config[0] == 'Battery':
+        hass_config_data["expire_after"] = 600
 
     if sensor_config[0] == 'Time':
         hass_config_data["value_template"] = "{% if value|string == '-1.0' %}infinit{% else %}{{ value }} minutes{% endif %}"
