@@ -22,6 +22,7 @@ version = 0.1
 def victron_thread(thread_count, config, vdevice_config, thread_q):
     from lib.victron import Victron
     v = Victron(config, vdevice_config, output, args, thread_count, thread_q)
+    logger.debug("victron library loaded, start connect_diconnect_loop()")
     v.connect_disconnect_loop()
 
 
@@ -246,5 +247,8 @@ if __name__ == "__main__":
 
     q = queue.Queue()
 
-    t = threading.Timer(2+(1*5), victron_thread, args=(1, config, devices_config, q))
-    t.start()
+    #logger.debug("Start worker thread")
+    #t = threading.Timer(2+(1*5), victron_thread, args=(1, config, devices_config, q))
+    #t.start()
+
+    victron_thread(1, config, devices_config, q)
