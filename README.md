@@ -55,8 +55,13 @@ There are some more commandline arguments, you can view them with `python3 victr
 ---
 
 1. You need to install some requirements: `pip3 install -r requirements.txt`
-2. Add your devices to the configuration file. See "Configuration in detail" section for examples.
-3. If you are using bluetooth or bluetooth ble you must be pairing your devices via bluetoothctl
+
+```
+# on raspberry pi os, these libs are required:
+sudo apt install build-essential libdbus-glib-1-dev libgirepository1.0-dev libcairo2 libcairo2-dev
+```
+3. Add your devices to the configuration file. See "Configuration in detail" section for examples.
+4. If you are using bluetooth or bluetooth ble you must be pairing your devices via bluetoothctl
 ```
 # Open bluetoothctl from commandline
 bluetoothctl
