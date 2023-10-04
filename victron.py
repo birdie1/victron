@@ -101,7 +101,7 @@ def get_helper_string_device(devices):
 
 
 def check_if_required_device_argument():
-    for x in ['-h', '--help', '-v', '--version']:
+    for x in ['-h', '--help', '-v', '--version', '-l', '--list-config-devices']:
         if x in sys.argv:
             return False
     return True
@@ -163,6 +163,13 @@ if __name__ == "__main__":
         help="Show version and exit",
         required=False,
     )
+    group02.add_argument(
+        "-l",
+        "--list-config-devices",
+        action="store_true",
+        help="Show devices from loaded config and exit",
+        required=False,
+    )
 
     group03 = parser.add_argument_group()
     group03.add_argument(
@@ -175,13 +182,17 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    if args.config_file:
+        with open(args.config_file, 'r') as ymlfile:
+            config = yaml.full_load(ymlfile)
+
     if args.version:
         print(version)
         sys.exit(0)
 
-    if args.config_file:
-        with open(args.config_file, 'r') as ymlfile:
-            config = yaml.full_load(ymlfile)
+    if args.list_config_devices:
+        print(get_helper_string_device(config['devices']))
+        sys.exit(0)
 
     if config is None:
         print("config.yml missing. Please create or specify another config file with -C")
@@ -190,10 +201,12 @@ if __name__ == "__main__":
     try:
         dev_id = int(args.device)
     except ValueError:
+        dev_id = None
         for count, device_config in enumerate(config['devices']):
             if device_config['name'] == args.device:
                 dev_id = count
                 break
+        if dev_id is None:
             print(f'{args.device} not found in config')
             sys.exit(1)
     devices_config = config['devices'][dev_id]
