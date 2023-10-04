@@ -54,29 +54,32 @@ There are some more commandline arguments, you can view them with `python3 victr
 
 ---
 
-1. You need to install some requirements: `pip3 install -r requirements.txt`
-2. Add your devices to the configuration file. See "Configuration in detail" section for examples.
-3. If you are using bluetooth or bluetooth ble you must be pairing your devices via bluetoothctl
-```
-# Open bluetoothctl from commandline
-bluetoothctl
-
-# Enable scanning
-scan on
-  
-# Get the mac address of your device
-# pair device and enter pin
-pair MAC
-
-```
-4. Start the script for your desired device: `python3 victron.py -d 0`
-5. For autostart tweak systemd files to your need, link them to `/etc/systemd/system/`, then start and/or enable systemd file
-```
-ln -s /opt/victron/systemd/victron-shunt.service /etc/systemd/system/victron-shunt.service
-
-systemctl enable victron-shunt.service
-systemctl start victron-shunt.service
-```
+1. You need to install python3-dbus 
+   For debian based system: `apt install python3-dbus`
+   For arch linux: `pacman -S python-dbus`
+2. You need to install some requirements: `pip3 install -r requirements.txt`
+3. Add your devices to the configuration file. See "Configuration in detail" section for examples.
+4. If you are using bluetooth or bluetooth ble you must be pairing your devices via bluetoothctl
+    ```
+    # Open bluetoothctl from commandline
+    bluetoothctl
+    
+    # Enable scanning
+    scan on
+      
+    # Get the mac address of your device
+    # pair device and enter pin
+    pair MAC
+    
+    ```
+5. Start the script for your desired device: `python3 victron.py -d 0`
+6. For autostart tweak systemd files to your need, link them to `/etc/systemd/system/`, then start and/or enable systemd file
+    ```
+    ln -s /opt/victron/systemd/victron-shunt.service /etc/systemd/system/victron-shunt.service
+    
+    systemctl enable victron-shunt.service
+    systemctl start victron-shunt.service
+    ```
 
 ### Commandline arguments
 ```
