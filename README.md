@@ -47,7 +47,7 @@ These scripts are written for my specific config file. If you have your devices 
 ---
 **NOTE**
 
-If you want the serial communication with the Phoenix Inverter, you must install this library:
+If you want serial communication with devices such as the Phoenix Inverter or a SmartShunt, you must install this library:
 - vedirect: https://github.com/karioja/vedirect
 
 There are some more commandline arguments, you can view them with `python3 victron.py --help`
