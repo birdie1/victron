@@ -111,7 +111,8 @@ PID = {
     "0xA345": "Phoenix Smart IP43 Charger 12|30 (3)",
     "0xA346": "Phoenix Smart IP43 Charger 24|16 (1+1)",
     "0xA347": "Phoenix Smart IP43 Charger 24|16 (3)",
-    "0xA389": "SmartShunt 500A/50mV"
+    "0xA389": "SmartShunt 500A/50mV",
+    "0xC038": "SmartShunt 300A/50mV"
 }
 
 # WARN and AR has same codes, but different meanings
